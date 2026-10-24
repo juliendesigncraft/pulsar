@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>Pulsar</string>
+	<key>CFBundleExecutable</key>
+	<string>Pulsar</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>dev.source.pulsar</string>
+	<key>CFBundleName</key>
+	<string>Pulsar</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>3.3</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>26.0</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Pulsar listens only while you hold ⌃⌥, ⌃⌘ or ⌃⇧, to turn your voice into text or a command. Nothing is recorded.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Pulsar turns what you say into text while you hold the voice keys, on your Mac when possible.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Pulsar turns Bluetooth on and off from the Controls tile in the notch island.</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Pulsar uses system automation to switch Dark Mode and empty the Trash, and to read what plays in Spotify and in your browser for the notch island.</string>
+	<key>NSFocusStatusUsageDescription</key>
+	<string>Pulsar shows a small moon in the notch island when Do Not Disturb turns on or off.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Pulsar shows your next event today in the notch island. Nothing leaves your Mac.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Pulsar shows your next event today in the notch island. Nothing leaves your Mac.</string>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>Pulsar uses each app audio only to change its volume in the dial mixer. Nothing is recorded and nothing leaves your Mac.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>dev.source.pulsar</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>pulsar</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>Pulsar records its own demo: only Pulsar windows and the desktop picture. The file stays in your Movies folder.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2026 Julien Design Craft. Free to use.</string>
+</dict>
+</plist>

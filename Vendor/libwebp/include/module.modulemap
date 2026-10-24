@@ -1,0 +1,7 @@
+module CWebP [system] {
+    header "webp/encode.h"
+    header "webp/decode.h"
+    link "webp"
+    link "sharpyuv"
+    export *
+}
