@@ -279,7 +279,9 @@ def handle(ev, state):
     if name == "UserPromptSubmit":
         raw = str(ev.get("prompt") or "")
         # 17/10: le notifiche dei lavori in background e i messaggi fra sessioni non sono domande dell'autore
-        if raw.lstrip().startswith(("<task-notification", "<cross-session-message", "[Subagent hand-back]")):
+        # 25/10: anche quelli che arrivano dall'app Claude senza tag ("Linked sessions now...", "The session \"x\" ... finished")
+        if raw.lstrip().startswith(("<task-notification", "<cross-session-message", "[Subagent hand-back]",
+                                    "Linked sessions now", "The session \"", "Another Claude session")):
             prompt = s.get("prompt") or "Background task finished"
         else:
             prompt = clean_prompt(raw)

@@ -18,7 +18,11 @@ enum Formato: String, CaseIterable {
 
 enum Scopo: String, CaseIterable { case web, mandare, stampare
     var etichetta: String {
-        switch self { case .web: return "Per il web"; case .mandare: return "Per mandarlo"; case .stampare: return "Per stamparlo" }
+        switch self {
+        case .web: return T("Per il web", "For the web")
+        case .mandare: return T("Per mandarlo", "To send")
+        case .stampare: return T("Per stamparlo", "To print")
+        }
     }
 }
 
@@ -136,10 +140,10 @@ enum Convertitore {
         return (max(1, Int((Double(w) * k).rounded())), max(1, Int((Double(h) * k).rounded())))
     }
 
-    /// Il riepilogo alla fine di un gruppo: "3 fatti", "9 fatti, 1 non riuscito".
+    /// Il riepilogo alla fine di un gruppo: "3 fatti", "9 fatti, 1 non riuscito" ("3 done", "9 done, 1 failed").
     static func riepilogo(fatti: Int, falliti: Int) -> String {
-        let a = fatti == 1 ? "1 fatto" : "\(fatti) fatti"
+        let a = fatti == 1 ? T("1 fatto", "1 done") : T("\(fatti) fatti", "\(fatti) done")
         guard falliti > 0 else { return a }
-        return a + ", " + (falliti == 1 ? "1 non riuscito" : "\(falliti) non riusciti")
+        return a + ", " + (falliti == 1 ? T("1 non riuscito", "1 failed") : T("\(falliti) non riusciti", "\(falliti) failed"))
     }
 }

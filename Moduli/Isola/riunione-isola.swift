@@ -85,6 +85,9 @@ final class RiunioneSource: IslandSource {
         })
     }
 
+    /// 25/10, l'autore: "ridimensionare". La scheda è alta 112: il pannello finisce lì, niente vuoto sotto.
+    var panelSize: CGSize? { CGSize(width: 600, height: 112) }
+
     func expandedView() -> AnyView {
         guard let r = riunione else { return AnyView(EmptyView()) }
         return AnyView(RiunioneVista(riunione: r, chiudi: { [weak self] in self?.chiudi?() }))

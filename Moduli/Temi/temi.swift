@@ -10,6 +10,8 @@
 //      (Spazio la legge da /pulsar-tema; la dynamic island dell'altra chat deve fare lo stesso).
 // 18/10: 3 e 4, il puntatore e lo stile delle icone sono solo della build dell'autore (Personale/temi-autore.swift);
 // la vendita cambia Pulsar, l'aspetto di macOS e scrive il file e la notifica (con l'identificatore dell'app).
+// 25/10: la vendita ha la sua versione di 3 e 4 (Moduli/Temi/temi-scrivania.swift): sfondi Matte inclusi e icone senza
+// simbolo per le cartelle che la persona sceglie, solo con l'interruttore "Cambia anche sfondo e cartelle" acceso.
 // Chrome non si può cambiare da fuori: i due temi sono in Apps/chrome-tema-matte e Apps/chrome-tema-white-matte.
 
 import AppKit
@@ -34,6 +36,8 @@ enum Temi {
         Impostazioni.set(t.rawValue, .pulsarTema)
         setLook(t.look)
         scrivi(t)
+        // 25/10: per chi compra sfondo e cartelle scelte, se ha acceso "Cambia anche sfondo e cartelle" (temi-scrivania.swift)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { TemiScrivania.applica(t) }
         // macOS chiaro o scuro: lo stesso comando dell'interruttore Dark Mode (permesso Automazione già chiesto lì).
         // Fase 5: solo se l'interruttore "Cambia anche macOS" della pagina Aspetto è acceso (di serie sì).
         guard temaCambiaMacOS(Impostazioni.object(.temiCambiaMacOS)) else { return }

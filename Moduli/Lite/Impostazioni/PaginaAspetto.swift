@@ -32,6 +32,24 @@ struct PaginaAspetto: View {
                                          sotto: T("Scuro o chiaro insieme al tema", "Dark or light along with the theme"),
                                          valore: { temaCambiaMacOS(Impostazioni.object(.temiCambiaMacOS)) }) { Impostazioni.set($0, .temiCambiaMacOS) }
                     }
+                    if Self.mostraScrivania(foto: foto) {
+                        // 25/10: sfondo e cartelle per chi compra (Moduli/Temi/temi-scrivania.swift), spento di serie
+                        GruppoImpostazioni(T("Sfondo e cartelle", "Wallpaper and folders")) {
+                            RigaInterruttore(T("Cambia anche sfondo e cartelle", "Change wallpaper and folders too"),
+                                             sotto: T("Spento, rimette quelli di prima", "Off puts the old ones back"),
+                                             valore: { foto ? false : TemiScrivania.acceso }) { on in
+                                if on { TemiScrivania.accendi() } else { TemiScrivania.spegni() }
+                            }
+                            ForEach(foto ? [] : TemiScrivania.cartelle, id: \.self) { c in
+                                RigaTasto((c as NSString).lastPathComponent, sotto: (c as NSString).abbreviatingWithTildeInPath,
+                                          tasto: T("Togli", "Remove")) { TemiScrivania.togli(c) }
+                            }
+                            RigaTasto(T("Cartelle", "Folders"), sotto: T("Solo queste cambiano icona", "Only these change icon"),
+                                      tasto: T("Aggiungi…", "Add…")) { TemiScrivania.scegliCartelle() }
+                            RigaTasto(T("Cartelle sulla Scrivania", "Folders on the Desktop"),
+                                      tasto: T("Aggiungi tutte", "Add all")) { TemiScrivania.aggiungi(TemiScrivania.cartelleSullaScrivania()) }
+                        }
+                    }
                     GruppoImpostazioni(T("Altri aspetti di Pulsar", "Other Pulsar looks")) {
                         ForEach(AgentMode.allCases.filter { $0 != .notte && $0 != .bianco }, id: \.self) { a in
                             if modo == a {
@@ -52,11 +70,17 @@ struct PaginaAspetto: View {
         }
     }
 
-    /// La riga della pagina bloccata: dice ciò che il tema fa davvero in questa build. Sfondo e cartelle
-    /// cambiano solo nella build personale (Personale/temi-autore.swift); la vendita cambia Pulsar e, se si vuole, macOS.
+    /// Il gruppo Sfondo e cartelle è della vendita. Nella build dell'autore li cambia Personale/temi-autore.swift:
+    /// lì compare solo nelle foto di vendita, che mostrano la pagina come la vede chi compra.
+    private static func mostraScrivania(foto: Bool) -> Bool {
+        return true
+    }
+
+    /// La riga della pagina bloccata: dice ciò che il tema fa davvero in questa build. Nella build personale sfondo e
+    /// cartelle dell'autore (Personale/temi-autore.swift); nella vendita Pulsar, macOS e, se si vuole, sfondo e cartelle.
     private static var rigaBloccata: String {
-        T("Dark Matte e White Matte per Pulsar e, se vuoi, anche per macOS.",
-          "Dark Matte and White Matte for Pulsar and, if you want, macOS too.")
+        T("Dark Matte e White Matte per Pulsar e, se vuoi, anche per macOS, sfondo e cartelle.",
+          "Dark Matte and White Matte for Pulsar and, if you want, macOS, wallpaper and folders too.")
     }
 
     /// Il tema da segnare, come la spunta del menu: quello salvato se Pulsar è in Dark o White Matte, nessuno in Sfondo.

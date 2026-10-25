@@ -32,6 +32,38 @@ extension AgentSession {
         let words = prompt.replacingOccurrences(of: "Scheduled: ", with: "").split(separator: " ").prefix(3).joined(separator: " ")
         return words.count > 22 ? String(words.prefix(21)) + "…" : words
     }
+
+    // 25/10, l'autore sul pannello: "non capisco davvero in che chat sono e cosa succede. Dovrebbe aiutare, non creare
+    // più caos". Misurato quel giorno su state.json: "You asked" mostrava i messaggi fra sessioni ("Linked sessions now..."),
+    // due attività programmate restavano "working" da più di 3 ore e i passi erano comandi grezzi ("cd /Users/...").
+
+    /// Viva: aspetta un ok, o lavora e ha dato notizie negli ultimi 15 minuti. Una "working" muta da ore non conta.
+    var viva: Bool {
+        pending != nil || question != nil || status == "waiting"
+            || (status == "working" && Date().timeIntervalSince1970 - updated < 15 * 60)
+    }
+
+    /// La richiesta dell'autore, solo se è sua: i messaggi fra sessioni e le notifiche dei lavori in background no.
+    var richiesta: String? {
+        let p = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        let macchina = ["Linked sessions now", "The session \"", "Another Claude session", "Background task finished",
+                        "Scheduled: ", "<", "["]
+        return p.isEmpty || macchina.contains(where: p.hasPrefix) ? nil : p
+    }
+    /// Il nome dell'attività programmata ("daily-pulse"), se la chat è una di quelle.
+    var programmata: String? { prompt.hasPrefix("Scheduled: ") ? String(prompt.dropFirst(11)) : nil }
+
+    /// In che stato è, in parole: una riga sola sotto il nome della chat.
+    var statoInParole: String {
+        let ora = Date().timeIntervalSince1970
+        if pending != nil || question != nil || status == "waiting" { return T("Aspetta il tuo OK", "Needs your OK") }
+        if status == "working" {
+            return viva ? T("Al lavoro da \(AgentLook.duration(self))", "Working for \(AgentLook.duration(self))")
+                        : T("Nessuna notizia da \(AgentLook.fa(ora - updated))", "No news for \(AgentLook.fa(ora - updated))")
+        }
+        if status == "done" { return T("Finito \(AgentLook.fa(ora - updated)) fa", "Finished \(AgentLook.fa(ora - updated)) ago") }
+        return T("Ferma", "Idle")
+    }
 }
 
 struct AgentPending: Decodable {
@@ -90,6 +122,8 @@ final class AgentStore: ObservableObject {
     @Published var mode: AgentMode = AgentMode.saved
     @Published var section: AgentSection = .work     // Notte: quale icona della colonna è accesa
     @Published var panelShown = false
+    /// 25/10: il pannello riferisce quanto è alto il suo contenuto (barra, sezione, campo); il modulo lo ridimensiona.
+    var panelMisura: ((CGFloat) -> Void)?
     private var lastStamp: Date?
     private var timer: Timer?
 
@@ -99,7 +133,7 @@ final class AgentStore: ObservableObject {
         // con più sessioni insieme: prima quella che aspetta un ok, poi la partita per ultima (stabile, non salta)
         return active.first { $0.pending != nil } ?? active.max { $0.started < $1.started } ?? sessions.first
     }
-    var active: [AgentSession] { sessions.filter { $0.status == "working" || $0.status == "waiting" } }
+    var active: [AgentSession] { sessions.filter(\.viva) }
 
     /// 17/10: l'hook parla con Pulsar sul socket (agente/pulsar.sock). Il timer resta come rete di sicurezza.
     private let line = AgentSocket(path: dir.appendingPathComponent("pulsar.sock").path)
@@ -350,6 +384,21 @@ enum AgentLook {
         let end = s.status == "done" && s.finished > 0 ? s.finished : Date().timeIntervalSince1970
         let sec = max(0, Int(end - s.started))
         return sec < 60 ? "\(sec) s" : "\(sec / 60) m \(sec % 60) s"
+    }
+    /// Quanto tempo fa, arrotondato: 40 s, 3 min, 2 h, 1 g.
+    static func fa(_ t: Double) -> String {
+        let s = max(0, Int(t))
+        if s < 60 { return "\(s) s" }
+        if s < 3600 { return "\(s / 60) min" }
+        if s < 86400 { return "\(s / 3600) h" }
+        return T("\(s / 86400) g", "\(s / 86400) d")
+    }
+    /// Un passo come si legge: i comandi grezzi del terminale diventano "Un comando nel terminale", col comando sotto.
+    static func passo(_ st: AgentStep) -> (titolo: String, sotto: String) {
+        let l = st.label.trimmingCharacters(in: .whitespaces)
+        let grezzo = st.kind == "RUN" && (l.hasPrefix("cd ") || l.contains("/") || l.contains("=") || l.contains("&&")
+                                          || l.contains("|") || l.first.map { $0.isLowercase } == true)
+        return grezzo ? (T("Un comando nel terminale", "A terminal command"), l) : (l, st.detail ?? "")
     }
 }
 
@@ -856,6 +905,12 @@ private final class MenuAction: NSObject {
     @objc func go() { run() }
 }
 
+/// Le altezze delle parti del pannello (barra in alto, sezione, campo in basso), per misurarlo sul contenuto.
+private struct PanelParti: PreferenceKey {
+    static var defaultValue: [String: CGFloat] { [:] }
+    static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) { value.merge(nextValue()) { $1 } }
+}
+
 struct NightPanel: View {
     @ObservedObject var store: AgentStore
     let close: () -> Void
@@ -878,15 +933,28 @@ struct NightPanel: View {
     var body: some View {
         VStack(spacing: 0) {
             toolbar.padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 14)
+                .background(GeometryReader { g in Color.clear.preference(key: PanelParti.self, value: ["barra": g.size.height]) })
             SwiftUI.Group {
                 if foto { sezione.frame(maxHeight: .infinity, alignment: .top) }
-                else { ScrollView(showsIndicators: false) { sezione } }
+                else {
+                    ScrollView(showsIndicators: false) {
+                        sezione.background(GeometryReader { g in Color.clear.preference(key: PanelParti.self, value: ["sezione": g.size.height]) })
+                    }
+                }
             }
             .mask(VStack(spacing: 0) {       // il contenuto sfuma prima del campo in basso
                 Color.black
                 LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom).frame(height: 18)
             })
-            if store.section != .window && store.section != .muta { composer.padding(.horizontal, 12).padding(.bottom, 12) }
+            if store.section != .window && store.section != .muta {
+                composer.padding(.horizontal, 12).padding(.bottom, 12)
+                    .background(GeometryReader { g in Color.clear.preference(key: PanelParti.self, value: ["campo": g.size.height]) })
+            }
+        }
+        // 25/10, l'autore: "il menu è tagliato in basso... ridimensiona sempre al contenuto": la somma delle parti va al modulo
+        .onPreferenceChange(PanelParti.self) { [store] parti in
+            let campo = (store.section != .window && store.section != .muta) ? (parti["campo"] ?? 0) : 0
+            store.panelMisura?((parti["barra"] ?? 0) + (parti["sezione"] ?? 0) + campo + 4)
         }
         .modifier(PanelSurface(mode: store.mode, shape: shape))
         .clipShape(shape)
@@ -948,13 +1016,7 @@ struct NightPanel: View {
         .padding(.leading, 2).padding(.bottom, 6)
     }
 
-    private func status(_ s: AgentSession) -> String {
-        switch s.status {
-        case "waiting": return "Needs your OK"
-        case "done": return "Done in \(AgentLook.duration(s))"
-        default: return "Working for \(AgentLook.duration(s))"
-        }
-    }
+    private func status(_ s: AgentSession) -> String { s.statoInParole }
 
     @ViewBuilder private func sectionView(_ s: AgentSession) -> some View {
         switch store.section {
@@ -973,15 +1035,36 @@ struct NightPanel: View {
         TimelineView(.periodic(from: .now, by: 1)) { _ in
             titleBlock(s.name, status(s), glyph: PillText.of(s).palette)
         }
-        if store.sessions.count > 1 { sessionPills }
-        if !s.prompt.isEmpty {
+        if pillole.count > 1 { sessionPills }
+        if let p = s.pending { approvalCard(p) }       // prima di tutto quello che aspetta te
+        if let r = s.richiesta {
             NightCard {
-                Text("You asked").font(.system(size: 11.5)).foregroundStyle(Night.t2)
-                Text(s.prompt).font(.system(size: 13.5)).foregroundStyle(Color.primary.opacity(0.92)).lineSpacing(2.5)
-                    .textSelection(.enabled)
+                Text(T("Hai chiesto", "You asked")).font(.system(size: 11.5)).foregroundStyle(Night.t2)
+                Text(r).font(.system(size: 13.5)).foregroundStyle(Color.primary.opacity(0.92)).lineSpacing(2.5)
+                    .lineLimit(4).textSelection(.enabled)
+            }
+        } else if let n = s.programmata {
+            NightCard {
+                Text(T("Attività programmata", "Scheduled task")).font(.system(size: 11.5)).foregroundStyle(Night.t2)
+                Text(n).font(.system(size: 13.5)).foregroundStyle(Color.primary.opacity(0.92))
             }
         }
-        if let p = s.pending { approvalCard(p) }
+        if s.status == "working" && !s.viva {
+            NightCard {
+                Text(T("Questa chat non scrive niente da un po': forse è chiusa o aspetta qualcosa in Claude.",
+                       "This chat hasn't said anything in a while: it may be closed or waiting for something in Claude."))
+                    .font(.system(size: 12.5)).foregroundStyle(Night.t2).lineSpacing(2.5)
+            }
+        } else if s.status != "done", let ora = s.steps.last(where: { $0.state == "now" }) {
+            let p = AgentLook.passo(ora)
+            NightCard {
+                Text(T("Adesso", "Now")).font(.system(size: 11.5)).foregroundStyle(Night.t2)
+                Text(p.titolo).font(.system(size: 14, weight: .medium)).foregroundStyle(Color.primary).lineLimit(2)
+                if !p.sotto.isEmpty {
+                    Text(p.sotto).font(.system(size: 11.5)).foregroundStyle(Night.t2).lineLimit(1).truncationMode(.tail)
+                }
+            }
+        }
         if s.status == "done" && !s.summary.isEmpty {
             NightCard {
                 Text("In plain words").font(.system(size: 11.5)).foregroundStyle(Night.t2)
@@ -997,11 +1080,15 @@ struct NightPanel: View {
                 EventRow(bar: ok ? Night.green : Night.red, title: "Tests", value: ok ? "Passed" : "Failed")
             }
         } else {
-            // il più recente in cima: nel pannello stretto il passo in corso resta sempre in vista
-            ForEach(Array(s.steps.suffix(9).reversed())) { st in
-                let k = StepKind.of(st.kind)
-                EventRow(bar: st.state == "failed" ? Night.red : k.tint, title: st.label,
-                         sub: [Self.word(st.kind), st.detail ?? "", (st.note ?? "").isEmpty ? "" : "fixed on \(st.note!)"]
+            // il più recente in cima; il passo in corso sta già in "Adesso", qui quelli prima (al massimo 5)
+            let prima = s.steps.filter { $0.state != "now" }.suffix(5).reversed()
+            if !prima.isEmpty {
+                Text(T("Prima", "Before")).font(.system(size: 11.5)).foregroundStyle(Night.t2).padding(.leading, 4).padding(.top, 2)
+            }
+            ForEach(Array(prima)) { st in
+                let k = StepKind.of(st.kind), p = AgentLook.passo(st)
+                EventRow(bar: st.state == "failed" ? Night.red : k.tint, title: p.titolo,
+                         sub: [p.sotto, (st.note ?? "").isEmpty ? "" : "fixed on \(st.note!)"]
                             .filter { !$0.isEmpty }.joined(separator: "   "),
                          state: st.state)
             }
@@ -1028,7 +1115,7 @@ struct NightPanel: View {
     private var sessionPills: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                ForEach(byStart.reversed()) { x in      // la più recente a sinistra, sempre in vista
+                ForEach(pillole.reversed()) { x in      // la più recente a sinistra, sempre in vista
                     let on = x.id == store.current?.id
                     Button { store.selectedID = x.id } label: {
                         HStack(spacing: 6) {
@@ -1047,11 +1134,17 @@ struct NightPanel: View {
         .padding(.bottom, 2)
     }
 
+    /// Le pillole: solo le chat vive e quelle finite nell'ultima mezz'ora (più quella aperta). Tutte stanno sotto l'orologio.
+    private var pillole: [AgentSession] {
+        let ora = Date().timeIntervalSince1970
+        return byStart.filter { $0.viva || ora - $0.updated < 30 * 60 || $0.id == store.current?.id }
+    }
+
     /// Ordine di partenza: le pillole non si scambiano di posto quando una sessione si aggiorna.
     private var byStart: [AgentSession] { store.sessions.sorted { $0.started < $1.started } }
 
     private func dot(_ x: AgentSession) -> Color {
-        x.pending != nil ? Night.amber : x.status == "done" ? Color.primary.opacity(0.4) : Night.green
+        x.pending != nil ? Night.amber : x.viva ? Night.green : Color.primary.opacity(0.4)
     }
 
     // MARK: Approva
@@ -1133,7 +1226,8 @@ struct NightPanel: View {
     // MARK: Sessioni
 
     @ViewBuilder private var sessionsList: some View {
-        titleBlock("Sessions", "\(store.active.count) running, \(store.sessions.count) in all")
+        titleBlock(T("Chat", "Chats"), T("\(store.active.count) al lavoro, \(store.sessions.count) in tutto",
+                                          "\(store.active.count) working, \(store.sessions.count) in all"))
         Button { store.selectedID = nil } label: {
             HStack(spacing: 6) {
                 Image(systemName: "dot.radiowaves.left.and.right").font(.system(size: 10.5, weight: .semibold))
@@ -1150,8 +1244,7 @@ struct NightPanel: View {
                 store.selectedID = x.id
                 store.section = .work
             } label: {
-                EventRow(bar: dot(x), title: x.name, sub: x.prompt,
-                         value: x.pending != nil ? "Waiting" : x.status == "done" ? "Done" : "Working",
+                EventRow(bar: dot(x), title: x.name, sub: x.statoInParole,
                          highlight: x.id == store.current?.id && store.selectedID != nil)
             }
             .buttonStyle(.plain)
@@ -1372,7 +1465,13 @@ final class AgentModule {
         let n = CGFloat(AgentSection.allCases.count)
         return n * 32 + (n - 1) * 6 + 2 * (NightRail.r * 2 + 4)
     }
-    private func panelHeight(_ vf: NSRect) -> CGFloat { min(vf.height - 24, 640) }
+    /// Il massimo del pannello: anche la colonna si allinea a questo, così non salta quando il contenuto cambia.
+    private func panelMax(_ vf: NSRect) -> CGFloat { min(vf.height - 24, 640) }
+    /// 25/10: alto quanto il contenuto (misurato da NightPanel), fra 320 punti e il massimo; prima della prima misura, il massimo.
+    private var panelContenuto: CGFloat = 0
+    private func panelHeight(_ vf: NSRect) -> CGFloat {
+        panelContenuto > 0 ? min(panelMax(vf), max(320, ceil(panelContenuto))) : panelMax(vf)
+    }
     /// La fila orizzontale della colonna libera: le icone da 32 con 6 fra l'una e l'altra, 12 ai lati.
     private var railLength: CGFloat {
         let n = CGFloat(AgentSection.allCases.count)
@@ -1381,7 +1480,7 @@ final class AgentModule {
     private var railHeight: CGFloat { NightRail.tastoLibero + 2 * NightRail.bordoLibero }
     /// La colonna ha la cima allineata al pannello.
     private func tabY(_ vf: NSRect) -> CGFloat {
-        vf.midY + panelHeight(vf) / 2 - tabH + NightRail.r
+        vf.midY + panelMax(vf) / 2 - tabH + NightRail.r
     }
 
     var enabled: Bool {
@@ -1462,6 +1561,14 @@ final class AgentModule {
         let panel = FloatPanel(level: .statusBar, keyable: true)
         panel.hasShadow = false   // niente ombra di finestra, faceva un bordo nero
         Ombra.attacca(panel) { [weak self] r in Ombra.tonda(self?.store.mode.rail == true ? 28 : 26)(r) }   // 12/10: l'ombra minima del tema
+        // 25/10: il pannello si misura sul contenuto (NightPanel riferisce barra, sezione e campo)
+        store.panelMisura = { [weak self] h in
+            DispatchQueue.main.async {
+                guard let self, abs(h - self.panelContenuto) > 2 else { return }
+                self.panelContenuto = h
+                if self.panelOpen { self.layout(animated: true) }
+            }
+        }
         panel.contentView = FirstClickHost(rootView: AgentPanel(store: store, edge: tabItem.look, close: { [weak self] in self?.setPanel(false) },
                                                                 setMode: { [weak self] m in
                                                                     // senza Complete la scelta dell'aspetto apre la licenza invece di non fare niente

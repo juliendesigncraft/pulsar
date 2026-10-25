@@ -327,6 +327,9 @@ final class KeySounds {
     }
 }
 
+/// 25/10: la larghezza del menu di Pulsar, quella del video di vendita (griglia 4x62 + azioni piccole a destra).
+enum MenuMisure { static let larghezza: CGFloat = 430 }
+
 // MARK: - App delegate
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
@@ -393,6 +396,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let registro = RegistroModuli.shared
         [agent, Anima.shared, isola, griglia, dial, temi, muta].forEach(registro.registra)
         registro.registra(ModuloRowline.shared)   // 19/10: Rowline dentro Complete
+        registro.registra(ModuloLanciatori.shared)   // 24/10: i Lanciatori nella Lite (Moduli/Lanciatori)
         LicenzaViva.shared.onChange = {
             RegistroModuli.shared.applica(sbloccati: LicenzaViva.shared.sbloccati)
             NotificationCenter.default.post(name: .licenzaCambiata, object: nil)   // le pagine dei moduli passano da bloccate a sbloccate
@@ -437,8 +441,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(quick)
         menu.addItem(.separator())
         fold(full, into: menu)
+        // 25/10, l'autore: "stringi un po' il menu come nel video di vendita". Erano le voci lunghe (nomi delle app in
+        // background) ad allargarlo: oltre 30 caratteri si accorciano, il nome intero resta nel suggerimento.
+        for i in menu.items where i.view == nil && i.title.count > 30 {
+            i.toolTip = i.toolTip ?? i.title
+            i.title = String(i.title.prefix(29)).trimmingCharacters(in: .whitespaces) + "…"
+        }
         // la griglia prende tutta la larghezza del menu: a destra, nello spazio che restava vuoto, le azioni piccole
-        if let v = quick.view { v.frame.size.width = max(296, menu.size.width) }
+        if let v = quick.view { v.frame.size.width = max(MenuMisure.larghezza, menu.size.width) }
     }
 
     /// Una riga per ogni sezione: l'intestazione (titolo in maiuscolo, disattivato) diventa una voce con sottomenu,
@@ -514,7 +524,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             QuickTile(symbol: "power", title: T("Esci da Pulsar", "Quit Pulsar"), on: false, act: close { NSApp.terminate(nil) }),
         ]
         let host = NSHostingView(rootView: QuickGrid(tiles: tiles, small: small, moduli: moduli))
-        host.frame = NSRect(x: 0, y: 0, width: 296, height: max(150, host.fittingSize.height))
+        host.frame = NSRect(x: 0, y: 0, width: MenuMisure.larghezza, height: max(150, host.fittingSize.height))
         let item = NSMenuItem()
         item.view = host
         return item
@@ -546,6 +556,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } else {
         menu.addItem(header(T("APP IN BACKGROUND (\(running.count) attive / \(entries.count))", "BACKGROUND APPS (\(running.count) running / \(entries.count))")))
         }
+        // 25/10, l'autore: "non serve che mostri tutte le attività in background, aggiungi un mostra tutto e riduci".
+        // Ridotto si vedono solo quelle accese; le spente si nascondono e la riga in fondo le mostra senza chiudere il menu.
+        var spente: [NSMenuItem] = []
         for (bundleID, info) in (pulsarDemoMenu ? [] : entries) {
             let isOn = running[bundleID] != nil
             let item = NSMenuItem(title: info["name"] ?? bundleID, action: #selector(toggleApp(_:)), keyEquivalent: "")
@@ -558,7 +571,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 icon.size = NSSize(width: 16, height: 16)
                 item.image = icon
             }
+            if !isOn { item.isHidden = !appTutte; spente.append(item) }
             menu.addItem(item)
+        }
+        if !spente.isEmpty {
+            let riga = NSMenuItem()
+            let vista = RigaMostraTutto(frame: NSRect(x: 0, y: 0, width: MenuMisure.larghezza, height: 24))
+            let testo: () -> String = { [unowned self] in
+                self.appTutte ? T("Riduci", "Show less") : T("Mostra tutte (\(spente.count) spente)", "Show all (\(spente.count) off)")
+            }
+            vista.testo = testo()
+            vista.aperta = appTutte
+            vista.azione = { [weak self, weak vista] in
+                guard let self else { return }
+                self.appTutte.toggle()
+                spente.forEach { $0.isHidden = !self.appTutte }
+                vista?.testo = testo(); vista?.aperta = self.appTutte
+            }
+            riga.view = vista
+            menu.addItem(riga)
         }
 
         menu.addItem(.separator())
@@ -799,6 +830,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: Costruzione voci
 
+
+    /// Le app in background spente si vedono solo dopo "Mostra tutte" (finché Pulsar resta aperta).
+    var appTutte = false
+
     private func header(_ title: String) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         item.isEnabled = false
@@ -956,3 +991,46 @@ let delegate = AppDelegate()
 app.delegate = delegate
 app.setActivationPolicy(.accessory) // solo menu bar, niente Dock
 app.run()
+
+
+/// 25/10: la riga "Mostra tutte / Riduci" delle app in background. È una vista e non una voce normale perché il clic
+/// non deve chiudere il menu: si aprono le righe nascoste e si resta lì.
+final class RigaMostraTutto: NSView {
+    var testo = "" { didSet { needsDisplay = true } }
+    var aperta = false { didSet { needsDisplay = true } }
+    var azione: (() -> Void)?
+    private var sopra = false { didSet { needsDisplay = true } }
+
+    override func updateTrackingAreas() {
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeAlways], owner: self))
+    }
+    override func mouseEntered(with e: NSEvent) { sopra = true }
+    override func mouseExited(with e: NSEvent) { sopra = false }
+    override func mouseUp(with e: NSEvent) { azione?() }
+
+    override func draw(_ r: NSRect) {
+        if sopra {
+            NSColor.labelColor.withAlphaComponent(0.08).setFill()
+            NSBezierPath(roundedRect: bounds.insetBy(dx: 5, dy: 1), xRadius: 5, yRadius: 5).fill()
+        }
+        let col = NSColor.secondaryLabelColor
+        if let im = NSImage(systemSymbolName: aperta ? "chevron.up" : "chevron.down", accessibilityDescription: nil)?
+            .withSymbolConfiguration(.init(pointSize: 11, weight: .regular)) {
+            let t = im.tinted(col)
+            t.draw(in: NSRect(x: 32 - t.size.width / 2, y: (bounds.height - t.size.height) / 2, width: t.size.width, height: t.size.height))
+        }
+        let a: [NSAttributedString.Key: Any] = [.font: NSFont.menuFont(ofSize: 0), .foregroundColor: col]
+        let str = NSAttributedString(string: testo, attributes: a)
+        str.draw(at: NSPoint(x: 46, y: (bounds.height - str.size().height) / 2))
+    }
+}
+
+private extension NSImage {
+    func tinted(_ c: NSColor) -> NSImage {
+        let im = NSImage(size: size, flipped: false) { r in
+            self.draw(in: r); c.set(); r.fill(using: .sourceAtop); return true
+        }
+        return im
+    }
+}

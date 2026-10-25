@@ -205,6 +205,24 @@ private struct MusicTile: View {
                     button(playing ? "pause.fill" : "play.fill", 13) { live ? media.command(.playPause) : media.resumeLast() }
                 }
                 .frame(maxWidth: .infinity)
+            } else if cells == 2 {
+                // 25/10, l'autore: "la sezione musica è tagliata". Su 2 caselle (la disposizione di serie) copertina, disco,
+                // testo e tre tasti non ci stavano: qui copertina più piccola senza disco, titolo, artista, play e avanti.
+                HStack(spacing: 10) {
+                    art(56).shadow(color: .black.opacity(0.3), radius: 3, x: 1)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(t.title).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                        Text(t.artist).font(.system(size: 11)).foregroundStyle(Color.primary.opacity(0.62)).lineLimit(1)
+                        Spacer(minLength: 2)
+                        HStack(spacing: 10) {
+                            button(playing ? "pause.fill" : "play.fill", 13) { live ? media.command(.playPause) : media.resumeLast() }
+                            button("forward.fill", 11) { media.command(.next) }.opacity(live ? 1 : 0.35).disabled(!live)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(height: 56, alignment: .top)
+                .frame(maxHeight: .infinity, alignment: .center)
             } else {
                 let side: CGFloat = 76                                  // tutta l'altezza utile della tessera (96 - 2 x 10)
                 HStack(spacing: 10) {

@@ -54,6 +54,10 @@ struct VoceBenvenuto {
             VoceBenvenuto(id: "muta", pagina: .muta,
                           valore: { f.muta?.acceso ?? (Impostazioni.object(.mutaAcceso) as? Bool ?? true) },
                           cambia: { f.muta?.acceso = $0 }, permessi: { f.muta?.permessi ?? [] }),
+            // 25/10, l'autore: "metti il tasto Lanciatori nei Pezzi di Pulsar" (Lite, nessun permesso)
+            VoceBenvenuto(id: "lanciatori", pagina: .lanciatori,
+                          valore: { ModuloLanciatori.shared.acceso },
+                          cambia: { ModuloLanciatori.shared.acceso = $0 }, permessi: { ModuloLanciatori.shared.permessi }),
         ]
         return voci.filter { !RegistroModuli.shared.bloccato($0.id) }
     }
@@ -67,6 +71,7 @@ struct VoceBenvenuto {
         case "anima": return T("Detta e comanda con la voce", "Dictate and command by voice")
         case "rowline": return T("Le finestre in fila", "Your windows in a row")
         case "muta": return T("Converte e mette a posto i file", "Converts and tidies your files")
+        case "lanciatori": return T("I tuoi siti accanto al Dock", "Your sites next to the Dock")
         default: return ""
         }
     }

@@ -25,6 +25,12 @@ protocol IslandSource: AnyObject {
     /// Piccola, a destra del notch (equalizzatore, tempo).
     func compactTrailing() -> AnyView
     func expandedView() -> AnyView
+    /// 25/10: quanto spazio serve aperta (larghezza del pannello, altezza sotto la testa). Nil = le misure di prima.
+    var panelSize: CGSize? { get }
+}
+
+extension IslandSource {
+    var panelSize: CGSize? { nil }
 }
 
 extension IslandSource { var usesHome: Bool { false } }
@@ -161,13 +167,16 @@ struct IslandView: View {
                         Spacer().frame(width: model.notchWidth)
                         r.compactTrailing().frame(maxWidth: .infinity)
                     }
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, 14)      // 25/10, l'autore: "in 4 min" toccava il bordo arrotondato (era 10)
                     .frame(height: model.notchHeight)
                     .transition(.opacity)
                 }
             case .expanded, .alert:
                 // 17/10: il pannello nuovo sotto la barra dei menu (isola-nuova.swift)
+                // 25/10: col tema cambiato a isola aperta le tessere restavano scure (i colori Volta leggono Theme.light,
+                // che non è osservato): con l'id sull'aspetto il pannello si ridisegna tutto in Dark o White Matte
                 IslandPanelContent(model: model)
+                    .id(look.mode)
                     .transition(.scale(scale: 0.97, anchor: .top).combined(with: .opacity))
             }
         }
@@ -399,6 +408,7 @@ final class IslandModule {
                          RecentsWidget(), MacWidget(), TodoWidget(),
                          ControlsWidget(model: model), PowerWidget(), StatsWidget()]
         model.widgets += [ClockWidget(), MonthWidget(), SunWidget()]   // 14/10: da LaunchMe, forme Braun (widget-braun.swift)
+        model.widgets.append(LanciatoriWidget()) // 24/10: i Lanciatori, nella Lite dal 24/10 sera (Moduli/Lanciatori)
         // 12/10 sera: una volta sola, le tessere nuove che contano di più entrano nella riga (le altre dai chip)
         // 12/10 tarda sera, l'autore: "meteo non ha senso così largo", "Spotify riempi la sezione": meteo 2 celle, musica 3
         if !Impostazioni.bool(.isolaMeteoStretto) {
@@ -416,6 +426,10 @@ final class IslandModule {
         if !Impostazioni.bool(.isolaHitodama1) {
             Impostazioni.set(true, .isolaHitodama1)
             model.tiles.layout.add("controls"); model.tiles.layout.add("todo")
+        }
+        if !Impostazioni.bool(.isolaLanciatori1) {     // 24/10: i Lanciatori entrano nella riga una volta, su due celle
+            Impostazioni.set(true, .isolaLanciatori1)
+            model.tiles.layout.add("lanciatori", cells: 2)
         }
         ClipboardHistory.shared.start()
         RecentApps.shared.start()
@@ -666,7 +680,8 @@ final class IslandModule {
             else if dropping { w = 600; h = notch.height + 8 + (MutaCentro.shared.mostraTessere && model.dropNote == nil ? MutaZona.altezza : 132) + 10 }
             else if let s = src, !s.usesHome {
                 if let a = s as? AgentIslandSource { w = 680; h = notch.height + 8 + a.height + 10 }
-                else { w = 600; h = notch.height + 8 + ((s as? AnimaSource)?.height ?? 150) }
+                else if let ps = s.panelSize { w = ps.width; h = notch.height + 8 + ps.height + 10 }   // 25/10: misurata sul contenuto
+                else { w = 600; h = notch.height + 8 + 150 }
             } else if model.tab == .tessere {
                 // più bassa della Casa (l'autore, 17/10); il cambio di scheda ridisegna subito, quindi niente più icone coperte
                 w = min(max(700, model.tiles.layout.width(cell: TileMetrics.cell, gap: TileMetrics.gap) + 40), sf.width - 40)

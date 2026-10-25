@@ -6,7 +6,7 @@ import SwiftUI
 import AppKit
 
 enum PaginaImpostazioni: String, CaseIterable {
-    case generale, barra, suoni, agent, mixer, isola, voce, rowline, muta, aspetto, permessi, scorciatoie, licenza, info
+    case generale, barra, suoni, agent, mixer, isola, lanciatori, voce, rowline, muta, aspetto, permessi, scorciatoie, licenza, info
 
     var titolo: String {
         switch self {
@@ -16,6 +16,7 @@ enum PaginaImpostazioni: String, CaseIterable {
         case .agent: return "Claude Code"
         case .mixer: return T("Ghiere", "Dials")
         case .isola: return T("Isola", "Island")
+        case .lanciatori: return T("Lanciatori", "Launchers")
         case .voce: return T("Voce", "Voice")
         case .rowline: return "Rowline"
         case .muta: return "Stow"
@@ -35,6 +36,7 @@ enum PaginaImpostazioni: String, CaseIterable {
         case .agent: return "sparkle"
         case .mixer: return "dial.medium.fill"
         case .isola: return "capsule.fill"
+        case .lanciatori: return "circle.grid.2x2.fill"
         case .voce: return "waveform"
         case .rowline: return "rectangle.split.3x1.fill"
         case .muta: return "tray.and.arrow.down.fill"
@@ -121,11 +123,23 @@ final class FinestraImpostazioni: NSObject, NSWindowDelegate {
 }
 
 /// Pulsar non ha il menu dell'app (vive nella barra dei menu): ⌘W lo gestisce la finestra stessa. La usa anche il benvenuto.
+/// 24/10: per lo stesso motivo nei campi di testo (pagina Lanciatori) ⌘V, ⌘C, ⌘X, ⌘A, ⌘Z e ⇧⌘Z non arrivavano
+/// (l'autore: "non mi lasciava fare copia incolla"): li manda la finestra al campo attivo, come farebbe il menu Modifica.
 final class FinestraConChiudi: NSWindow {
     override func performKeyEquivalent(with e: NSEvent) -> Bool {
-        if e.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command, e.charactersIgnoringModifiers == "w" {
-            performClose(nil); return true
+        let mod = e.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let tasto = e.charactersIgnoringModifiers?.lowercased() ?? ""
+        if mod == .command, tasto == "w" { performClose(nil); return true }
+        let azione: Selector? = switch (mod, tasto) {
+        case (.command, "v"): #selector(NSText.paste(_:))
+        case (.command, "c"): #selector(NSText.copy(_:))
+        case (.command, "x"): #selector(NSText.cut(_:))
+        case (.command, "a"): #selector(NSText.selectAll(_:))
+        case (.command, "z"): Selector(("undo:"))
+        case ([.command, .shift], "z"): Selector(("redo:"))
+        default: nil
         }
+        if let azione, NSApp.sendAction(azione, to: nil, from: self) { return true }
         return super.performKeyEquivalent(with: e)
     }
 }
@@ -177,6 +191,7 @@ struct VistaImpostazioni: View {
         case .voce: PaginaVoce()
         case .rowline: PaginaRowline()
         case .muta: PaginaMuta()
+        case .lanciatori: PaginaLanciatori()
         case .aspetto: PaginaAspetto()
         }
     }

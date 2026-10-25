@@ -617,10 +617,20 @@ final class AnimaSource: IslandSource {
         }
     }
     var usesHome: Bool { false }
-    /// Quanto è alta l'isola aperta: le risposte lunghe hanno bisogno di spazio.
-    var height: CGFloat {
-        if case .risposta(_, let t) = anima.phase { return min(260, 96 + CGFloat(t.count / 70) * 17) }
-        return 112
+    /// 25/10, l'autore: "testi troppo vicini al bordo di sinistra e troppo spazio vuoto: ridimensiona sempre al contenuto".
+    /// Il pannello si misura sul titolo e sul testo veri: largo quanto serve (fra 380 e 600), alto quanto le righe.
+    var panelSize: CGSize? {
+        let (titolo, testo) = AnimaExpanded.testi(anima.phase)
+        let corpo = NSFont.systemFont(ofSize: 12.5), testa = NSFont.systemFont(ofSize: 13, weight: .medium)
+        let margini = 2 * (20 + AnimaExpanded.margine)          // il pannello (20) più il margine della Voce
+        let larghezzaTesto = ceil((testo as NSString).size(withAttributes: [.font: corpo]).width)
+        let larghezzaTitolo = ceil((titolo as NSString).size(withAttributes: [.font: testa]).width) + 28 + 32   // puntini e chiudi
+        let w = min(600, max(380, max(larghezzaTesto, larghezzaTitolo) + margini))
+        let righe = (testo as NSString).boundingRect(with: NSSize(width: w - margini, height: 400),
+                                                     options: [.usesLineFragmentOrigin, .usesFontLeading],
+                                                     attributes: [.font: corpo]).height
+        let alto = 22 + 8 + min(200, ceil(righe) + 2 * CGFloat(max(1, Int(ceil(righe / 17))))) + 6
+        return CGSize(width: w, height: alto)
     }
     func compactLeading() -> AnyView { AnyView(AnimaGlyph(anima: anima).frame(width: 18, height: 18)) }
     func compactTrailing() -> AnyView { AnyView(AnimaCompactText(anima: anima)) }
@@ -654,19 +664,24 @@ private struct AnimaCompactText: View {
     }
 }
 
-private struct AnimaExpanded: View {
+struct AnimaExpanded: View {
     @ObservedObject var anima: Anima
+    /// Margine in più ai lati, oltre ai 20 del pannello (25/10: il testo stava troppo vicino al bordo).
+    static let margine: CGFloat = 12      // 25/10 sera: anche 8 era poco, il testo sfiorava il bordo nei reel
+
+    static func testi(_ p: AnimaPhase) -> (String, String) {
+        switch p {
+        case .ascolto(let m, let t):
+            return (m == .cerchia ? T("Cerchia qualcosa e chiedi", "Circle something and ask") : T("Ti ascolto", "Listening"), t.isEmpty ? "…" : t)
+        case .pensa(let m, let t): return (m == .cerchia ? T("Guardo", "Looking") : T("Ci penso", "Thinking"), t)
+        case .risposta(let a, let b): return (a, b)
+        case .idle: return ("", "")
+        }
+    }
+
     var body: some View {
-        let (titolo, testo, piccolo): (String, String, String) = {
-            switch anima.phase {
-            case .ascolto(let m, let t):
-                let h = m == .cerchia ? T("Cerchia qualcosa e chiedi", "Circle something and ask") : T("Ti ascolto", "Listening")
-                return (h, t.isEmpty ? "…" : t, m == .cerchia ? "⌃⇧" : "⌃⌘")
-            case .pensa(let m, let t): return (m == .cerchia ? T("Guardo", "Looking") : T("Ci penso", "Thinking"), t, "")
-            case .risposta(let a, let b): return (a, b, "")
-            case .idle: return ("", "", "")
-            }
-        }()
+        let (titolo, testo) = Self.testi(anima.phase)
+        let piccolo: String = { if case .ascolto(let m, _) = anima.phase { return m == .cerchia ? "⌃⇧" : "⌃⌘" }; return "" }()
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 AnimaGlyph(anima: anima).frame(width: 18, height: 18)
@@ -686,6 +701,7 @@ private struct AnimaExpanded: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+        .padding(.horizontal, Self.margine).padding(.top, 6).padding(.bottom, 8)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }

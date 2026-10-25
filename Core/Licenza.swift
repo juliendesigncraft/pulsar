@@ -34,7 +34,7 @@ enum Licenza {
     static let giorniControllo = 30
     // Segnaposto: la fase 5 mette gli ID veri di Gumroad.
     static let idGumroad: [Prodotto: String] = [
-        .agent: "DA-IMPOSTARE-agent", .mixer: "DA-IMPOSTARE-mixer", .complete: "DA-IMPOSTARE-complete"]
+        .agent: "BuLoD3WPrIFA5Jx35Vyl8A==", .mixer: "nmsRlAMP9wehNoMYpOxS4g==", .complete: "yp-utPYb7v9wUMLLOpWadg=="]
 
     private static let giorno = 86_400.0
 

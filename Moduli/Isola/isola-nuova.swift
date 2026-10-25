@@ -14,6 +14,9 @@ import AppKit
 struct IslandShellFill: View {
     let neckWidth: CGFloat
     let neckHeight: CGFloat
+    // 25/10, l'autore: "su White Matte il notch è ancora nero". Theme.light non è osservato: senza questo la forma
+    // aperta restava scura finché l'isola non si chiudeva. Ora si ridisegna a ogni cambio d'aspetto.
+    @ObservedObject private var look = GhieraLook.shared
     var body: some View {
         let shape = NotchShape(shoulder: 10, bottom: 28)
         ZStack(alignment: .top) {

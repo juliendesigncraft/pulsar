@@ -214,13 +214,13 @@ struct MutaPeekRiga: View {
                 Icona(simbolo: "eye", aiuto: T("Mostra nel Finder", "Show in Finder"), primaria: true) { MutaCentro.shared.mostra() }
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 18)          // 25/10, l'autore: l'occhio toccava l'angolo arrotondato (era 12)
         .onAppear { DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { salto += 1 } }
     }
 
     /// Titolo corto e due icone: la larghezza la decide il titolo (il dettaglio compare al passaggio).
     static func larghezza(_ item: PeekItem, notch: CGFloat) -> CGFloat {
-        max(notch + 20, CGFloat(item.title.count) * 6.6 + 110)
+        max(notch + 20, CGFloat(item.title.count) * 6.6 + 122)
     }
 }
 

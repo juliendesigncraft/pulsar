@@ -60,7 +60,7 @@ enum Riordino {
 
     /// Il nome di una cartella per le persone: "Design › Mockups", senza la casa e senza "Desktop" davanti.
     static func etichetta(_ d: Destinazione, home: URL) -> String {
-        guard case .cartella(let c) = d else { return "nel Cestino" }
+        guard case .cartella(let c) = d else { return T("nel Cestino", "in the Trash") }
         var parti = c.standardizedFileURL.pathComponents
         let casa = home.standardizedFileURL.pathComponents
         if parti.starts(with: casa) { parti.removeFirst(casa.count) } else { parti = Array(parti.suffix(2)) }
@@ -68,14 +68,17 @@ enum Riordino {
         return parti.joined(separator: " › ")
     }
 
-    /// "3 file a posto: 2 in Design › Mockups, 1 in Books". Le cartelle in ordine di quanti file, poi di nome.
+    /// "3 file a posto: 2 in Design › Mockups, 1 in Books" ("3 files put away: ..."). Le cartelle in ordine di quanti file, poi di nome.
+    /// Il ": " separa titolo e dettaglio dell'avviso nel notch (MutaCentro.dividi): resta in tutte e due le lingue.
     static func resoconto(_ spostati: [Destinazione], home: URL) -> String {
-        guard !spostati.isEmpty else { return "Niente da mettere a posto" }
+        guard !spostati.isEmpty else { return T("Niente da mettere a posto", "Nothing to put away") }
+        let cestino = etichetta(.cestino, home: home)
         var conta: [String: Int] = [:]
         for d in spostati { conta[etichetta(d, home: home), default: 0] += 1 }
         let parti = conta.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
-            .map { $0.key == "nel Cestino" ? "\($0.value) nel Cestino" : "\($0.value) in \($0.key)" }
-        return "\(spostati.count) file a posto: " + parti.joined(separator: ", ")
+            .map { $0.key == cestino ? "\($0.value) \(cestino)" : "\($0.value) in \($0.key)" }
+        let n = spostati.count
+        return T("\(n) file a posto: ", n == 1 ? "1 file put away: " : "\(n) files put away: ") + parti.joined(separator: ", ")
     }
 
     /// Annulla: ogni file torna da dove era venuto, in ordine inverso. Se nel frattempo il posto è preso,

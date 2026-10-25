@@ -13,9 +13,10 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Framewor
 cp Info.plist "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" "$APP/Contents/Info.plist" 2>/dev/null || true
 
-# Resources: key sounds, the Claude Code hook, the icon, third-party licenses
+# Resources: key sounds, the Claude Code hook, the theme wallpapers and folder icons, the icon, third-party licenses
 cp -R sounds "$APP/Contents/Resources/sounds"
 cp agente/hook.py "$APP/Contents/Resources/hook.py"
+mkdir -p "$APP/Contents/Resources/temi-vendita" && cp Moduli/Temi/risorse/* "$APP/Contents/Resources/temi-vendita/"   # Matte wallpapers and folder icons
 cp assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 mkdir -p "$APP/Contents/Resources/Licenze"
 cp Vendor/libwebp/COPYING "$APP/Contents/Resources/Licenze/libwebp.txt"

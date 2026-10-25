@@ -10,7 +10,7 @@ MODULI=(
   Moduli/Isola/isola-nuova.swift Moduli/Isola/isola-email.swift Moduli/Media/musica-viva.swift Moduli/Mixer/ghiera.swift
   Moduli/Isola/isola-logica.swift Moduli/Isola/isola.swift Moduli/Media/media.swift Moduli/Widget/widget.swift Moduli/Media/browser.swift
   Moduli/Media/miniatura.swift Moduli/Isola/isola-agente.swift Moduli/Isola/isola-sistema.swift Moduli/Isola/riunione-isola.swift Moduli/Widget/widget-extra.swift Moduli/Griglia/griglia.swift
-  Moduli/Temi/temi.swift Moduli/Anima/anima.swift Moduli/Anima/anima-cose.swift Moduli/Anima/anima-stella.swift Moduli/Widget/widget-hitodama.swift
+  Moduli/Temi/temi.swift Moduli/Temi/temi-scrivania-logica.swift Moduli/Temi/temi-scrivania.swift Moduli/Anima/anima.swift Moduli/Anima/anima-cose.swift Moduli/Anima/anima-stella.swift Moduli/Widget/widget-hitodama.swift
   Moduli/Lite/nothing.swift Moduli/Lite/barra-guardia.swift Moduli/Media/musica-led.swift Moduli/Widget/widget-braun.swift
   Moduli/Lite/Impostazioni/MattoniImpostazioni.swift Moduli/Lite/Impostazioni/FinestraImpostazioni.swift Moduli/Lite/Impostazioni/PaginaGenerale.swift
   Moduli/Lite/Impostazioni/PaginaPermessi.swift Moduli/Lite/Impostazioni/PaginaLicenza.swift Moduli/Lite/Impostazioni/PaginaScorciatoie.swift
@@ -22,6 +22,8 @@ MODULI=(
   Moduli/Convertitore/convertitore-logica.swift Moduli/Convertitore/convertitore-motore.swift Moduli/Convertitore/riordino-logica.swift
   Moduli/Convertitore/muta-zona.swift Moduli/Convertitore/muta.swift Moduli/Convertitore/muta-viste.swift Moduli/Convertitore/strumenti-logica.swift
   Moduli/Lite/Impostazioni/PaginaMuta.swift Moduli/Lite/Impostazioni/PaginaRowline.swift
+  # Lanciatori (24/10, nella Lite): la lista si cambia dalla pagina delle Impostazioni; nella build dell'autore la dà Spazio (Personale/lanciatori-personale.swift)
+  Moduli/Lanciatori/lanciatori-lista.swift Moduli/Lanciatori/lanciatori.swift Moduli/Lite/Impostazioni/PaginaLanciatori.swift
 )
 
 

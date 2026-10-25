@@ -33,7 +33,7 @@ I built Pulsar with Claude. I designed every part, Claude wrote the Swift with m
 **Everywhere**
 - Rowline: your windows side by side in a row that scrolls (⌃⌥⌘F)
 - Voice: hold ⌃⌥ to dictate, ⌃⌘ to give a command, ⌃⇧ to circle something and ask
-- Dark Matte and White Matte, for Pulsar and, if you want, macOS
+- Dark Matte and White Matte, for Pulsar and, if you want, macOS, the wallpaper and the folders you pick
 
 ## Build it
 

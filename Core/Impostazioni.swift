@@ -56,6 +56,10 @@ enum Chiave: String, CaseIterable {
     case isolaEnabled
     case isolaHitodama1
     case isolaLanciatori1
+    case lanciatoriAcceso      // 24/10: il modulo Lanciatori (Lite), acceso di serie
+    case lanciatoriStash
+    case lanciatoriScrivania
+    case lanciatoriScrivaniaPos
     case isolaLat
     case isolaLon
     case isolaLyrics
@@ -87,6 +91,8 @@ enum Chiave: String, CaseIterable {
     case rowlineAcceso
     case riunioneNelNotch
     case temiCambiaMacOS      // fase 5: il tema cambia anche l'aspetto di macOS (acceso se mancante)
+    case temiScrivania        // 25/10: il tema cambia anche sfondo e cartelle scelte, solo vendita (spento se mancante)
+    case temiCartelle         // 25/10: le cartelle che cambiano icona col tema (Moduli/Temi/temi-scrivania.swift)
     case tempoRegistra = "tempo.registra"
     case visibleDesktopCount
     case wallAccent

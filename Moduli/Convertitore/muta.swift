@@ -67,11 +67,8 @@ final class MutaCentro: ObservableObject {
         Impostazioni.set(cartelle, .mutaCartelle)
     }
 
-    /// La cartella o "nel Cestino" per le persone. La logica pura (riordino-logica) resta in italiano per le prove: qui si traduce.
-    func etichetta(_ d: Destinazione) -> String {
-        if case .cestino = d { return T("nel Cestino", "in the Trash") }
-        return Riordino.etichetta(d, home: home)
-    }
+    /// La cartella o "nel Cestino" per le persone (la traduzione sta già in Riordino.etichetta).
+    func etichetta(_ d: Destinazione) -> String { Riordino.etichetta(d, home: home) }
 
     /// Il nome di una regola per le persone: le quattro delle cartelle standard (versione in vendita) si traducono, le altre restano.
     static func nomeRegola(_ nome: String) -> String {
