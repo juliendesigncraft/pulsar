@@ -11,6 +11,7 @@ I built Pulsar with Claude. I designed every part, Claude wrote the Swift with m
 
 - **Can build it?** Run one script and you have everything unlocked, for free.
 - **Want it ready to use?** The signed app is on [Gumroad](https://juliendesigncraft.gumroad.com): Lite is free, the full app is a one-time purchase. Buying it is also how you support the project.
+- **Want to build it from scratch, your way?** The [`prompts/`](prompts) folder has one prompt per part, with the reference images and the problems that cost me days.
 - **Want your own version?** Open this folder in Claude Code. It reads `CLAUDE.md` and knows where everything lives, so you can ask for changes in plain words. Start with `/make-it-mine`.
 
 ## What it does
@@ -64,6 +65,12 @@ This is the part I care about most. Pulsar is built to be changed by talking to 
 `CLAUDE.md` is the map Claude follows, and [CUSTOMIZE.md](CUSTOMIZE.md) has prompts that work well.
 
 A note on language: the code comments are in Italian, the language I think in. Claude reads them without trouble, and the app itself is in English and Italian.
+
+## Build your own from the prompts
+
+[`prompts/`](prompts) is Pulsar as prompts: Lite, Agent, Mixer, Island, Stow, Rowline and Themes, one folder each. Paste a prompt into Claude Code with its images and build that part from zero. Start with Lite, then ask Claude to add the next part to the same app.
+
+If Pulsar is useful to you, a star on this repo helps other people find it.
 
 ## How it is organized
 

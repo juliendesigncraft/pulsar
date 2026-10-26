@@ -366,15 +366,22 @@ struct PeekView: View {
                 else if item.kind == "app" { AppEventRow(item: item) }
                 else if item.kind == "muta" { MutaPeekRiga(item: item) }      // 19/10: resoconto di Muta con Annulla e Mostra
                 else {
-                    HStack(spacing: 8) {
+                    // 26/10, l'autore: "il notch non è adattato". Una notifica lunga usciva dalla forma: la campanella tagliata
+                    // a sinistra e il sottotitolo oltre il bordo destro. Ora margini veri dentro la forma, la larghezza la
+                    // misura width(_:notch:) sul testo vero, e oltre il massimo si tronca coi puntini, prima il sottotitolo.
+                    HStack(spacing: Self.stacco) {
                         Image(systemName: item.symbol).font(.system(size: 12, weight: .medium))
                             .foregroundStyle(tint).symbolRenderingMode(.hierarchical)
-                        Text(item.title).font(.system(size: 11.5, weight: .medium)).lineLimit(1)
+                            .frame(width: Self.icona)
+                        Text(item.title).font(.system(size: 11.5, weight: .medium)).lineLimit(1).truncationMode(.tail)
+                            .layoutPriority(1)
                         if !item.detail.isEmpty {
-                            Text(item.detail).font(.system(size: 11)).foregroundStyle(Color.primary.opacity(0.55)).lineLimit(1)
+                            Text(item.detail).font(.system(size: 11)).foregroundStyle(Color.primary.opacity(0.55))
+                                .lineLimit(1).truncationMode(.tail)
                         }
                     }
                     .foregroundStyle(Color.primary)
+                    .padding(.horizontal, Self.margine)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -392,13 +399,29 @@ struct PeekView: View {
         }
     }
 
-    /// Larghezza che serve alla comparsa: notifiche più larghe, il resto compatto.
+    static let margine: CGFloat = 16, icona: CGFloat = 14, stacco: CGFloat = 8
+    /// Oltre questa larghezza la comparsa non cresce più: il testo si tronca dentro.
+    static let massimo: CGFloat = 440
+
+    /// La larghezza vera di una riga di testo, col carattere che usa la vista.
+    static func misura(_ s: String, _ size: CGFloat, _ peso: NSFont.Weight) -> CGFloat {
+        ceil((s as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: size, weight: peso)]).width)
+    }
+
+    /// Pura nel calcolo: icona, titolo e sottotitolo misurati, più i margini; mai più stretta del notch, mai oltre il massimo.
+    static func larghezzaRiga(titolo: String, dettaglio: String, icona: CGFloat, notch: CGFloat) -> CGFloat {
+        var w = 2 * margine + icona + stacco + misura(titolo, 11.5, .medium)
+        if !dettaglio.isEmpty { w += stacco + misura(dettaglio, 11, .regular) }
+        return min(massimo, max(notch + 20, w))
+    }
+
+    /// Larghezza che serve alla comparsa (prima era stimata contando i caratteri, e con testi lunghi sbagliava).
     static func width(_ item: PeekItem, notch: CGFloat) -> CGFloat {
         switch item.kind {
         case "apps": return max(notch + 20, CGFloat(AppIconsRow.apps().count) * 26 + 40)
-        case "notification": return min(360, max(notch + 20, CGFloat(item.title.count + item.detail.count) * 6.2 + 70))
         case "muta": return MutaPeekRiga.larghezza(item, notch: notch)
-        default: return max(notch + 20, CGFloat(item.title.count + item.detail.count) * 6.4 + 54)
+        case "app": return larghezzaRiga(titolo: item.title, dettaglio: item.detail, icona: 18, notch: notch)
+        default: return larghezzaRiga(titolo: item.title, dettaglio: item.detail, icona: icona, notch: notch)
         }
     }
 }
@@ -416,8 +439,10 @@ struct AppEventRow: View {
                     .animation(.spring(response: 0.32, dampingFraction: 0.45), value: up)
             }
             Text(item.title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Color.primary).lineLimit(1)
-            Text(item.detail).font(.system(size: 11)).foregroundStyle(Color.primary.opacity(0.55))
+                .truncationMode(.tail).layoutPriority(1)
+            Text(item.detail).font(.system(size: 11)).foregroundStyle(Color.primary.opacity(0.55)).lineLimit(1).truncationMode(.tail)
         }
+        .padding(.horizontal, PeekView.margine)
         .onAppear { up = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { up = false } }
     }
 }

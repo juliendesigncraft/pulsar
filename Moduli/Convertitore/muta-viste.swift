@@ -207,7 +207,7 @@ struct MutaPeekRiga: View {
                 .symbolEffect(.bounce, value: salto)
                 .symbolEffect(.rotate, isActive: item.symbol == "arrow.triangle.2.circlepath")
             Text(item.title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Color.primary).lineLimit(1)
-                .help(item.detail)
+                .truncationMode(.tail).help(item.detail)
             Spacer(minLength: 4)
             if item.symbol != "arrow.triangle.2.circlepath" {      // durante la conversione niente bottoni
                 Icona(simbolo: "arrow.uturn.backward", aiuto: T("Annulla", "Undo")) { MutaCentro.shared.annulla() }
@@ -220,7 +220,8 @@ struct MutaPeekRiga: View {
 
     /// Titolo corto e due icone: la larghezza la decide il titolo (il dettaglio compare al passaggio).
     static func larghezza(_ item: PeekItem, notch: CGFloat) -> CGFloat {
-        max(notch + 20, CGFloat(item.title.count) * 6.6 + 122)
+        // 26/10: misurata sul testo vero (contare i caratteri sbagliava coi nomi lunghi), mai oltre il massimo delle comparse
+        min(PeekView.massimo, max(notch + 20, PeekView.misura(item.title, 11.5, .medium) + 13 + 8 + 4 + 2 * 22 + 2 * 8 + 2 * 18))
     }
 }
 
