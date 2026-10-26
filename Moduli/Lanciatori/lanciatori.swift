@@ -569,11 +569,7 @@ final class LanciatoriStash {
     }
 
     private func guarda(_ p: NSPoint) {
-        let f = schermo.frame
-        // 24/10, scelta dell'autore: "insieme, come un Dock unico". Il Dock esce da tutto il bordo in basso (misurato), quindi
-        // anche lo stash: tutto il fondo dello schermo, e resta fuori finché il mouse sta nella fascia del Dock o sopra di lui.
-        let sotto = p.y <= f.minY + 2 && p.x >= f.minX && p.x <= f.maxX
-        let fascia = p.y <= f.minY + Self.fondo + StashVista.altezza + 2
+        let (sotto, fascia) = Self.zona(p, schermo: schermo.frame, larghezza: StashVista.larghezzaBase)
         if !fuori {
             if sotto {
                 guard apri == nil else { return }
@@ -586,6 +582,16 @@ final class LanciatoriStash {
         } else {
             pianifica(dopo: Tempo.attesaUscita)
         }
+    }
+
+    /// 26/10, l'autore: "non serve si apra ogni volta che si sorvola il Dock normale. Se sorvolo quella parte, lo fai comparire."
+    /// Prima (24/10, "come un Dock unico") usciva da tutto il bordo in basso, quindi anche usando il Dock di macOS.
+    /// Ora conta solo la sua zona: dal bordo sinistro fino alla fine della striscia (che finisce prima del Dock, posti(cartelle:)).
+    /// Pura: `sotto` = il mouse tocca il bordo basso nella zona (fa uscire), `fascia` = è all'altezza della striscia nella zona (la tiene fuori).
+    static func zona(_ p: NSPoint, schermo f: NSRect, larghezza: CGFloat) -> (sotto: Bool, fascia: Bool) {
+        let fine = f.minX + margine + larghezza + 8
+        let dentro = p.x >= f.minX && p.x <= fine
+        return (dentro && p.y <= f.minY + 2, dentro && p.y <= f.minY + fondo + StashVista.altezza + 2)
     }
 
     private func esci() {
