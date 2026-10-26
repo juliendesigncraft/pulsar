@@ -125,7 +125,7 @@ final class Lanciatori: ObservableObject {
 
     func aggiorna() {
         let s = fonte.cartelleScrivania                    // riletta a ogni giro: un'app installata dopo compare da sola
-        if s != scrivania { scrivania = s; for v in s.flatMap(\.voci) { icona(per: v) } }
+        if !s.isEmpty, s != scrivania { scrivania = s; for v in s.flatMap(\.voci) { icona(per: v) } }   // vuota = le decide usa()
         fonte.leggi { [weak self] nuove in
             DispatchQueue.main.async { if let self, nuove != self.cartelle { self.usa(nuove) } }
         }
@@ -138,8 +138,21 @@ final class Lanciatori: ObservableObject {
         fonte.salva(nuove)
     }
 
+    /// 26/10: le cartelle che contengono app del Mac vanno nel riquadro sul desktop, le altre (siti, giochi) nella barra
+    /// accanto al Dock, come nel reel. Se la fonte dà cartelle sue (build dell'autore) restano quelle.
+    static func diApp(_ c: Cartella) -> Bool { c.voci.contains { $0.u.hasPrefix("file://") } }
+    /// Le cartelle della barra accanto al Dock: senza quelle che stanno già nel riquadro (se così non resta niente, tutte).
+    var cartelleStash: [Cartella] {
+        let r = cartelle.filter { c in !scrivania.contains { $0.id == c.id } }
+        return r.isEmpty ? cartelle : r
+    }
+
     private func usa(_ c: [Cartella]) {
         cartelle = c
+        if fonte.cartelleScrivania.isEmpty {
+            let s = c.filter(Lanciatori.diApp)
+            if s != scrivania { scrivania = s }
+        }
         for v in c.flatMap(\.voci) { icona(per: v) }
     }
 
@@ -737,17 +750,17 @@ private struct StashVista: View {
         }
     }
 
-    private var cartella: Lanciatori.Cartella? { dock.cartelle.first { $0.id == scelta } ?? dock.cartelle.first }
+    private var cartella: Lanciatori.Cartella? { dock.cartelleStash.first { $0.id == scelta } ?? dock.cartelleStash.first }
 
     private struct Disposizione { let elems: [Elem]; let basi: [CGFloat]; let larghe: [CGFloat]; let base: CGFloat; let totale: CGFloat; let vicino: Int? }
 
     /// Gli elementi in fila e l'onda dell'ingrandimento: centri calcolati sulle misure di base, come fa il Dock.
     private func disponi() -> Disposizione {
         let voci = cartella?.voci ?? []
-        let posti = LanciatoriStash.posti(cartelle: dock.cartelle.count)
+        let posti = LanciatoriStash.posti(cartelle: dock.cartelleStash.count)
         // 25/10: niente pagine. Quelle che stanno prima del Dock, poi "Tutti" apre sopra la fila la griglia con ogni titolo
         let molte = voci.count > posti
-        let elems: [Elem] = dock.cartelle.map { .cartella($0) } + [.separa]
+        let elems: [Elem] = dock.cartelleStash.map { .cartella($0) } + [.separa]
             + voci.prefix(molte ? posti - 1 : posti).map { .voce($0) } + (molte ? [.altri] : [])
         let basi: [CGFloat] = elems.map { e in if case .separa = e { return Self.separatore }; return Self.lato }
         var centri: [CGFloat] = []

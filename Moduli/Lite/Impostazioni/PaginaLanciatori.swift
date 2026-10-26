@@ -5,6 +5,7 @@
 // da Lanciatori.cambia, che mostra e salva. Se la fonte non si cambia da qui (build dell'autore) la lista si mostra soltanto.
 // Nelle foto da terminale: gli esempi del primo avvio, come li vede chi compra.
 import SwiftUI
+import UniformTypeIdentifiers
 import AppKit
 
 struct PaginaLanciatori: View {
@@ -35,14 +36,14 @@ struct PaginaLanciatori: View {
 
     var body: some View {
         PaginaRileggi { PaginaCornice(titolo: PaginaImpostazioni.lanciatori.titolo,
-                                      nota: modificabile ? T("I siti che apri con un clic: nell'isola, accanto al Dock e sul desktop.",
-                                                             "The sites you open in one click: in the island, next to the Dock and on the desktop.")
+                                      nota: modificabile ? T("Siti, app e giochi da aprire con un clic: i siti e i giochi accanto al Dock, le app nel riquadro sul desktop.",
+                                                             "Sites, apps and games in one click: sites and games next to the Dock, apps in the box on your desktop.")
                                                          : dock.fonte.nota) {
             GruppoAcceso(valore: { Self.acceso }) { ModuloLanciatori.shared.acceso = $0 }
             Group {
                 GruppoImpostazioni(T("Dove", "Where")) {
                     RigaInterruttore(T("Stash in basso a sinistra", "Stash bottom left"),
-                                     sotto: T("Esce insieme al Dock dal bordo in basso dello schermo.", "Comes up with the Dock from the bottom edge of the screen."),
+                                     sotto: T("Esce quando porti il mouse in basso, a sinistra del Dock.", "Comes out when you move the mouse to the bottom, left of the Dock."),
                                      valore: { LanciatoriStash.shared.acceso }) {
                         LanciatoriStash.shared.acceso = $0
                     }
@@ -148,10 +149,13 @@ struct PaginaLanciatori: View {
                 TastoImpostazioni(T("Aggiungi", "Add"), principale: true, azione: aggiungiOra)
                     .disabled(link.trimmingCharacters(in: .whitespaces).isEmpty)
                     .opacity(link.trimmingCharacters(in: .whitespaces).isEmpty ? 0.4 : 1)
+                // 26/10: anche le app del Mac, con la loro icona (vanno nel riquadro sul desktop, come App e Design nel reel)
+                TastoImpostazioni(T("Aggiungi app…", "Add app…"), azione: scegliApp)
             }
             if let errore {
-                Text(errore == .giaPresente ? T("Questo sito c'è già nella cartella.", "This site is already in the folder.")
-                                            : T("Il link deve iniziare con http:// o https://", "The link must start with http:// or https://"))
+                Text(errore == .giaPresente ? T("C'è già nella cartella.", "It's already in the folder.")
+                                            : T("Serve un sito (https://) o il link di un'app (come steam://rungameid/105600).",
+                                                "Use a website (https://) or an app link (like steam://rungameid/105600)."))
                     .font(.system(size: MisureImpostazioni.piccolo))
                     .foregroundStyle(m.chiaro ? Color(red: 0.79, green: 0.34, blue: 0.31) : Color(red: 0.88, green: 0.48, blue: 0.45))
             }
@@ -159,6 +163,21 @@ struct PaginaLanciatori: View {
         .padding(.horizontal, MisureImpostazioni.margine)
         .padding(.vertical, 9)
         .onChange(of: link) { errore = nil }
+    }
+
+    private func scegliApp() {
+        guard !foto, let c = aperta, dock.fonte.modificabile else { return }
+        let p = NSOpenPanel()
+        p.allowedContentTypes = [.application]
+        p.directoryURL = URL(fileURLWithPath: "/Applications")
+        p.allowsMultipleSelection = true
+        p.prompt = T("Aggiungi", "Add")
+        guard p.runModal() == .OK else { return }
+        var lista = dock.cartelle
+        for u in p.urls {
+            if case .success(let nuove) = ListaLanciatori.aggiungiApp(lista, percorso: u.path, in: c.id) { lista = nuove }
+        }
+        dock.cambia(lista)
     }
 
     private func aggiungiOra() {

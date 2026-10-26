@@ -38,19 +38,57 @@ enum ListaLanciatori {
                                                     Voce(n: "MDN Web Docs", u: "https://developer.mozilla.org")]),
         Cartella(id: "tools", nome: "Tools", voci: [Voce(n: "Excalidraw", u: "https://excalidraw.com"),
                                                     Voce(n: "Squoosh", u: "https://squoosh.app")]),
+        // 26/10: le app vanno nel riquadro sul desktop, i siti nella barra accanto al Dock (come nel reel di Pulsar)
+        Cartella(id: "apps", nome: "Apps", voci: [Voce(n: "Notes", u: "file:///System/Applications/Notes.app/"),
+                                                  Voce(n: "Calendar", u: "file:///System/Applications/Calendar.app/"),
+                                                  Voce(n: "Music", u: "file:///System/Applications/Music.app/"),
+                                                  Voce(n: "Photos", u: "file:///System/Applications/Photos.app/")]),
+        Cartella(id: "design", nome: "Design", voci: [Voce(n: "Preview", u: "file:///System/Applications/Preview.app/"),
+                                                      Voce(n: "Freeform", u: "file:///System/Applications/Freeform.app/")]),
     ]
 
+    /// Gli schemi che non si accettano mai come link: file:// (le app si aggiungono col tasto apposta), ftp, script e dati.
+    static let schemiVietati: Set<String> = ["file", "ftp", "javascript", "data", "about"]
+
     /// Pura: il link come va salvato, o nil. Senza schema si aggiunge https:// ("lichess.org" va bene);
-    /// valgono solo http e https con un host che abbia un punto, senza spazi.
+    /// http e https vogliono un host che abbia un punto. 26/10: valgono anche i link delle app (steam://rungameid/105600,
+    /// spotify:..., obsidian://...), così chi compra può mettere i suoi giochi come nel reel. Mai spazi.
     static func normalizza(_ testo: String) -> String? {
         var s = testo.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !s.isEmpty, !s.contains(where: \.isWhitespace) else { return nil }
         if !s.lowercased().hasPrefix("http://") && !s.lowercased().hasPrefix("https://") {
-            guard !s.contains("://") else { return nil }       // ftp://, file:// e simili no
+            if let r = s.range(of: "://") {
+                let schema = s[..<r.lowerBound].lowercased()
+                guard !schema.isEmpty, schema.first!.isLetter, schema.allSatisfy({ $0.isLetter || $0.isNumber || "+-.".contains($0) }),
+                      !schemiVietati.contains(schema), s[r.upperBound...].count > 0 else { return nil }
+                return s
+            }
             s = "https://" + s
         }
         guard let u = URL(string: s), let h = u.host, h.contains("."), !h.hasPrefix("."), !h.hasSuffix(".") else { return nil }
         return s
+    }
+
+    /// Pura: la copertina di un gioco di Steam (steam://rungameid/ID o store.steampowered.com/app/ID), come nello stash del reel.
+    static func copertinaSteam(_ link: String) -> String? {
+        let l = link.lowercased()
+        var id: Substring?
+        if let r = l.range(of: "steam://rungameid/") { id = l[r.upperBound...].prefix { $0.isNumber } }
+        else if let r = l.range(of: "store.steampowered.com/app/") { id = l[r.upperBound...].prefix { $0.isNumber } }
+        guard let id, !id.isEmpty else { return nil }
+        return "https://cdn.cloudflare.steamstatic.com/steam/apps/\(id)/library_600x900.jpg"
+    }
+
+    /// Pura: un'app del Mac scelta col tasto "Aggiungi app" (percorso del .app) diventa una voce file://; nome = nome dell'app.
+    static func aggiungiApp(_ cs: [Cartella], percorso: String, in cartella: String) -> Result<[Cartella], Errore> {
+        guard percorso.hasSuffix(".app") else { return .failure(.linkNonValido) }
+        guard let i = cs.firstIndex(where: { $0.id == cartella }) else { return .failure(.cartellaMancante) }
+        let u = URL(fileURLWithPath: percorso).absoluteString
+        guard !cs[i].voci.contains(where: { $0.u == u }) else { return .failure(.giaPresente) }
+        let n = ((percorso as NSString).lastPathComponent as NSString).deletingPathExtension
+        var r = cs
+        r[i].voci.append(Voce(n: n, u: u))
+        return .success(r)
     }
 
     /// Pura: il nome di riserva quando non se ne scrive uno: l'host senza "www.".
@@ -77,7 +115,7 @@ enum ListaLanciatori {
         guard !cs[i].voci.contains(where: { $0.app == nil && $0.u == u }) else { return .failure(.giaPresente) }
         let n = nome.trimmingCharacters(in: .whitespacesAndNewlines)
         var r = cs
-        r[i].voci.append(Voce(n: n.isEmpty ? nomeDa(u) : n, u: u))
+        r[i].voci.append(Voce(n: n.isEmpty ? nomeDa(u) : n, u: u, icona: copertinaSteam(u)))
         return .success(r)
     }
 

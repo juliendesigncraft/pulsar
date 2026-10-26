@@ -26,6 +26,7 @@ I built Pulsar with Claude. I designed every part, Claude wrote the Swift with m
 
 **On the edge of the screen**
 - A volume dial, a mixer for each app, a timer, screen and keyboard light
+- Launchers: your sites and Steam games next to the Dock, your Mac apps in a box on the desktop
 
 **In the menu bar**
 - Hide the icons you don't need, your desktop in a menu, the small system switches
