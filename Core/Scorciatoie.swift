@@ -27,6 +27,7 @@ enum Scorciatoie {
             ("⌃⇧", t("Tieni premuto per cerchiare e chiedere", "Hold to circle and ask"), t("Voce", "Voice")),
             // la scorciatoia della griglia si sceglie fra ⌘4, ⌃⌥Spazio e spenta (GridModule.HotKey): una sola alla volta
             (griglia, t("Griglia delle app", "App grid"), t("Griglia", "Grid")),
+            ("⌃⌥↩", t("Apri e chiudi il terminale del notch", "Open and close the notch terminal"), t("Terminale", "Terminal")),
         ] + rowline(it)
     }
 

@@ -58,6 +58,29 @@ struct VoceBenvenuto {
             VoceBenvenuto(id: "lanciatori", pagina: .lanciatori,
                           valore: { ModuloLanciatori.shared.acceso },
                           cambia: { ModuloLanciatori.shared.acceso = $0 }, permessi: { ModuloLanciatori.shared.permessi }),
+            // 06/11, l'autore: facoltativa, il cliente sceglie al primo avvio o dopo (spenta di serie)
+            // 13/11: le Utilità (ondata 2 di VORSSAINT.md), Lite, spente di serie
+            VoceBenvenuto(id: "utilita", pagina: .utilita,
+                          valore: { ModuloUtilita.shared.acceso },
+                          cambia: { ModuloUtilita.shared.acceso = $0 }, permessi: { ModuloUtilita.shared.permessi }),
+            // 13/11: Sistema, Rete e Manutenzione (ondata 3), Complete, spento di serie
+            // 13/11: Mouse e tastiera (ondata 4), Complete, spento di serie
+            VoceBenvenuto(id: "input", pagina: .input,
+                          valore: { ModuloInput.shared.acceso },
+                          cambia: { ModuloInput.shared.acceso = $0 }, permessi: { ModuloInput.shared.permessi }),
+            VoceBenvenuto(id: "sistema", pagina: .sistema,
+                          valore: { ModuloSistema.shared.acceso },
+                          cambia: { ModuloSistema.shared.acceso = $0 }, permessi: { [] }),
+            VoceBenvenuto(id: "trackpad", pagina: .trackpad,
+                          valore: { ModuloTrackpad.shared.acceso },
+                          cambia: { ModuloTrackpad.shared.acceso = $0 }, permessi: { ModuloTrackpad.shared.permessi }),
+            // 07/11, dal reel di ZincWolf: terminale dal notch e barra di sviluppo, spenti di serie
+            VoceBenvenuto(id: "terminale", pagina: .terminale,
+                          valore: { ModuloTerminale.shared.acceso },
+                          cambia: { ModuloTerminale.shared.acceso = $0 }, permessi: { ModuloTerminale.shared.permessi }),
+            VoceBenvenuto(id: "barradev", pagina: .barradev,
+                          valore: { ModuloBarraSviluppo.shared.acceso },
+                          cambia: { ModuloBarraSviluppo.shared.acceso = $0 }, permessi: { ModuloBarraSviluppo.shared.permessi }),
         ]
         return voci.filter { !RegistroModuli.shared.bloccato($0.id) }
     }
@@ -72,6 +95,12 @@ struct VoceBenvenuto {
         case "rowline": return T("Le finestre in fila", "Your windows in a row")
         case "muta": return T("Converte e mette a posto i file", "Converts and tidies your files")
         case "lanciatori": return T("I tuoi siti accanto al Dock", "Your sites next to the Dock")
+        case "input": return T("Scorciatoie di testo, super tasto, clic a tre dita", "Text snippets, super key, three-finger click")
+        case "sistema": return T("CPU, rete, pulizia e aggiornamenti", "CPU, network, cleanup and updates")
+        case "utilita": return T("Chiudi è esci, taglia i file, link puliti", "Quit on close, cut files, clean links")
+        case "trackpad": return T("Volume e luce dal bordo del trackpad", "Volume and brightness from the trackpad edge")
+        case "terminale": return T("Un terminale che scende dal notch", "A terminal that drops from the notch")
+        case "barradev": return T("Branch, server e limite di Claude in alto", "Branch, servers and Claude limit up top")
         default: return ""
         }
     }

@@ -62,10 +62,17 @@ final class AnimaCose: ObservableObject {
 
     // MARK: cose da fare
 
-    func aggiungi(_ s: String, quando: Date? = nil) { todo.insert(Todo(testo: s, quando: quando), at: 0); salva() }
+    func aggiungi(_ s: String, quando: Date? = nil) { todo.insert(Todo(testo: s, quando: quando), at: 0); salva(); OggiStoria.shared.segna(.aggiunta) }
+    /// 31/10: l'ora del promemoria di un'attività (nil = nessuno). A quell'ora esce dal notch (isola-promemoria.swift).
+    func promemoria(_ t: Todo, _ quando: Date?) {
+        guard let i = todo.firstIndex(where: { $0.id == t.id }) else { return }
+        todo[i].quando = quando
+        salva()
+    }
     func spunta(_ t: Todo) {
-        guard let i = todo.firstIndex(of: t) else { return }
+        guard let i = todo.firstIndex(where: { $0.id == t.id }) else { return }
         todo[i].fatto.toggle()
+        if todo[i].fatto { OggiStoria.shared.segna(.fatta) }    // 31/10: per l'Andamento della scheda Oggi
         salva()
         // le cose fatte escono dalla lista dopo un attimo, così si vede la spunta
         if todo[i].fatto {

@@ -395,7 +395,7 @@ enum AnimaBrain {
         return u
     }()
 
-    private static func genera(_ prompt: String, json: Bool, _ done: @escaping (String?) -> Void) {
+    static func genera(_ prompt: String, json: Bool, _ done: @escaping (String?) -> Void) {
         var req = URLRequest(url: ollama, timeoutInterval: 40)
         req.httpMethod = "POST"
         var body: [String: Any] = ["model": modello, "prompt": prompt, "stream": false, "think": false,

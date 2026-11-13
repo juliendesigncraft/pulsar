@@ -168,6 +168,7 @@ final class SystemWatch {
         // le icone delle app ogni tanto
         timers.append(Timer.scheduledTimer(withTimeInterval: 150, repeats: true) { [weak self] _ in self?.ambient() })
         notifications.start()
+        CuffieMonitor.shared.start()       // 04/11: la comparsa delle cuffie Bluetooth
         // app aperte e chiuse: la loro icona sotto il notch, mai sulla barra dei menu
         let ws = NSWorkspace.shared.notificationCenter
         for (name, opened) in [(NSWorkspace.didLaunchApplicationNotification, true), (NSWorkspace.didTerminateApplicationNotification, false)] {
@@ -362,7 +363,8 @@ struct PeekView: View {
         VStack(spacing: 0) {
             Spacer().frame(height: notchHeight)
             Group {
-                if item.kind == "apps" { AppIconsRow() }
+                if item.kind == "cuffie" { CuffiePeek(item: item) }
+                else if item.kind == "apps" { AppIconsRow() }
                 else if item.kind == "app" { AppEventRow(item: item) }
                 else if item.kind == "muta" { MutaPeekRiga(item: item) }      // 19/10: resoconto di Muta con Annulla e Mostra
                 else {
@@ -385,7 +387,7 @@ struct PeekView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 26)
+            .frame(height: item.kind == "cuffie" ? CuffiePeek.altezza : 26)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
@@ -418,6 +420,7 @@ struct PeekView: View {
     /// Larghezza che serve alla comparsa (prima era stimata contando i caratteri, e con testi lunghi sbagliava).
     static func width(_ item: PeekItem, notch: CGFloat) -> CGFloat {
         switch item.kind {
+        case "cuffie": return max(notch + 20, CuffiePeek.larghezza)
         case "apps": return max(notch + 20, CGFloat(AppIconsRow.apps().count) * 26 + 40)
         case "muta": return MutaPeekRiga.larghezza(item, notch: notch)
         case "app": return larghezzaRiga(titolo: item.title, dettaglio: item.detail, icona: 18, notch: notch)

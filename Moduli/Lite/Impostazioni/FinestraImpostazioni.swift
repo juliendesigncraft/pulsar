@@ -6,7 +6,7 @@ import SwiftUI
 import AppKit
 
 enum PaginaImpostazioni: String, CaseIterable {
-    case generale, barra, suoni, agent, mixer, isola, lanciatori, voce, rowline, muta, aspetto, permessi, scorciatoie, licenza, info
+    case generale, barra, suoni, agent, mixer, trackpad, terminale, barradev, isola, lanciatori, voce, rowline, muta, utilita, input, sistema, aspetto, permessi, scorciatoie, licenza, info
 
     var titolo: String {
         switch self {
@@ -17,9 +17,15 @@ enum PaginaImpostazioni: String, CaseIterable {
         case .mixer: return T("Ghiere", "Dials")
         case .isola: return T("Isola", "Island")
         case .lanciatori: return T("Lanciatori", "Launchers")
+        case .trackpad: return "Trackpad"
+        case .terminale: return T("Terminale", "Terminal")
+        case .barradev: return T("Barra di sviluppo", "Developer bar")
         case .voce: return T("Voce", "Voice")
         case .rowline: return "Rowline"
         case .muta: return "Stow"
+        case .utilita: return T("Utilità", "Utilities")
+        case .sistema: return T("Sistema", "System")
+        case .input: return T("Tastiera e mouse", "Keyboard")
         case .aspetto: return T("Aspetto", "Appearance")
         case .permessi: return T("Permessi", "Permissions")
         case .scorciatoie: return T("Scorciatoie", "Shortcuts")
@@ -37,9 +43,15 @@ enum PaginaImpostazioni: String, CaseIterable {
         case .mixer: return "dial.medium.fill"
         case .isola: return "capsule.fill"
         case .lanciatori: return "circle.grid.2x2.fill"
+        case .trackpad: return "rectangle.and.hand.point.up.left.fill"
+        case .terminale: return "apple.terminal.fill"
+        case .barradev: return "arrow.triangle.branch"
         case .voce: return "waveform"
         case .rowline: return "rectangle.split.3x1.fill"
         case .muta: return "tray.and.arrow.down.fill"
+        case .utilita: return "wand.and.rays"
+        case .sistema: return "cpu"
+        case .input: return "keyboard"
         case .aspetto: return "circle.lefthalf.filled"
         case .permessi: return "hand.raised.fill"
         case .scorciatoie: return "command"
@@ -191,7 +203,13 @@ struct VistaImpostazioni: View {
         case .voce: PaginaVoce()
         case .rowline: PaginaRowline()
         case .muta: PaginaMuta()
+        case .utilita: PaginaUtilita()
+        case .sistema: PaginaSistema()
+        case .input: PaginaInput()
         case .lanciatori: PaginaLanciatori()
+        case .trackpad: PaginaTrackpad()
+        case .terminale: PaginaTerminale()
+        case .barradev: PaginaBarraSviluppo()
         case .aspetto: PaginaAspetto()
         }
     }
@@ -214,7 +232,7 @@ private struct BarraImpostazioni: View {
                     HStack(spacing: 10) {
                         Image(systemName: p.simbolo)
                             .font(.system(size: 14))
-                            .foregroundStyle(scelta ? m.a2 : m.t3)
+                            .foregroundStyle(scelta ? m.scelta : m.t3)
                             .frame(width: 20)
                         Text(p.titolo)
                             .font(.system(size: MisureImpostazioni.testo))

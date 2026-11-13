@@ -71,7 +71,22 @@ enum SystemVolume {
 // MARK: - Un tap per app
 
 /// Il guadagno viene letto dal thread audio: una scatola condivisa, scritta dal main thread.
-private final class GainBox { var value: Float = 1 }
+private final class GainBox {
+    var value: Float = 1
+    // 29/10: misure scritte dal thread audio e lette dal main (letture a rischio di un valore vecchio, innocue):
+    // servono a capire se il tap riceve davvero suono. Se resta muto mentre l'app suona, l'app va liberata.
+    var peak: Float = 0
+    var calls: Int = 0
+    var layout: String = ""
+}
+
+/// Registro della ghiera: ~/Library/Logs/Pulsar-ghiera.log (solo diagnosi dei tap, niente dati personali).
+private func ghieraLog(_ s: String) {
+    let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Pulsar-ghiera.log")
+    let line = "\(ISO8601DateFormatter().string(from: Date())) \(s)\n"
+    if let h = try? FileHandle(forWritingTo: url) { h.seekToEndOfFile(); h.write(Data(line.utf8)); try? h.close() }
+    else { try? line.write(to: url, atomically: true, encoding: .utf8) }
+}
 
 private final class AppTap {
     private var tapID = AudioObjectID(kAudioObjectUnknown)
@@ -79,7 +94,13 @@ private final class AppTap {
     private var procID: AudioDeviceIOProcID?
     private let box = GainBox()
     let processes: [AudioObjectID]
+    /// 09/11: si azzera a fine init. Se l'orologio partisse prima, il tempo passato sull'avviso di macOS
+    /// conterebbe come silenzio e il controllo "tap muto dopo 2 s" chiuderebbe un tap appena nato.
+    private(set) var createdAt = Date()
     var gain: Float { get { box.value } set { box.value = newValue } }
+    var peakIn: Float { box.peak }
+    var callbacks: Int { box.calls }
+    var layout: String { box.layout }
 
     init?(processes: [AudioObjectID], outputUID: String, gain: Float) {
         self.processes = processes
@@ -110,6 +131,12 @@ private final class AppTap {
             let ins = UnsafeMutableAudioBufferListPointer(UnsafeMutablePointer(mutating: inInput))
             let outs = UnsafeMutableAudioBufferListPointer(outOutput)
             var g = box.value
+            box.calls += 1
+            if box.layout.isEmpty {
+                let i = ins.map { "\($0.mNumberChannels)ch/\($0.mDataByteSize)B" }.joined(separator: ",")
+                let o = outs.map { "\($0.mNumberChannels)ch/\($0.mDataByteSize)B" }.joined(separator: ",")
+                box.layout = "in[\(i)] out[\(o)]"
+            }
             for i in 0..<outs.count {
                 let ob = outs[i]
                 guard let od = ob.mData else { continue }
@@ -119,6 +146,9 @@ private final class AppTap {
                 let ib = ins[min(i, ins.count - 1)]
                 let inp = idata.assumingMemoryBound(to: Float.self)
                 let inN = Int(ib.mDataByteSize) / 4
+                var pk: Float = 0
+                vDSP_maxmgv(inp, 1, &pk, vDSP_Length(inN))
+                if pk > box.peak { box.peak = pk }
                 let ic = max(1, Int(ib.mNumberChannels)), oc = max(1, Int(ob.mNumberChannels))
                 if ic == oc {
                     let n = min(inN, outN)
@@ -132,6 +162,7 @@ private final class AppTap {
             }
         }
         guard err == noErr, procID != nil, AudioDeviceStart(aggID, procID) == noErr else { stop(); return nil }
+        createdAt = Date()
     }
 
     func stop() {
@@ -150,7 +181,10 @@ struct MixApp: Identifiable, Equatable {
     let icon: NSImage?
     var processes: [AudioObjectID]
     var playing: Bool
-    static func == (a: MixApp, b: MixApp) -> Bool { a.id == b.id && a.processes == b.processes && a.playing == b.playing }
+    /// 02/11: l'app usa anche il microfono (chiamata WhatsApp, FaceTime, Zoom). In chiamata macOS abbassa
+    /// l'audio delle altre app, e il suono che rimanda il tap è "un'altra app": al 99% cadeva quasi a zero.
+    var inCall = false
+    static func == (a: MixApp, b: MixApp) -> Bool { a.id == b.id && a.processes == b.processes && a.playing == b.playing && a.inCall == b.inCall }
 }
 
 enum DialMode: String, CaseIterable {
@@ -182,6 +216,11 @@ final class DialStore: ObservableObject {
     var onTimerDone: (() -> Void)?
 
     private var taps: [String: AppTap] = [:]
+    /// 09/11: AudioDeviceCreateIOProcIDWithBlock resta fermo finché si risponde all'avviso di macOS sull'audio di sistema.
+    /// Sul thread principale teneva bloccati notch e menu: i tap ora nascono e si chiudono qui, uno alla volta.
+    private let tapQueue = DispatchQueue(label: "pulsar.ghiera.tap", qos: .userInitiated)
+    private var creating: Set<String> = []     // tap in costruzione: il controllo di ogni secondo non li richiede due volte
+    private var tapGeneration = 0              // cambia quando i tap vanno rifatti: chi nasce con un numero vecchio si chiude
     private var outputUID: String? = SystemVolume.uid
     private var poll: Timer?
     private var listeners: [(AudioObjectID, AudioObjectPropertyAddress, AudioObjectPropertyListenerBlock)] = []
@@ -200,8 +239,20 @@ final class DialStore: ObservableObject {
         poll?.invalidate(); poll = nil
         for (obj, a, b) in listeners { var a = a; AudioObjectRemovePropertyListenerBlock(obj, &a, .main, b) }
         listeners = []
-        taps.values.forEach { $0.stop() }
+        // Si aspetta poco: all'uscita le app devono tornare a suonare, ma con l'avviso aperto la coda è ferma e non si può restare appesi.
+        let closed = DispatchSemaphore(value: 0)
+        closeAllTaps { closed.signal() }
+        _ = closed.wait(timeout: .now() + 0.5)
+    }
+
+    private func closeTap(_ tap: AppTap) { tapQueue.async { tap.stop() } }
+
+    private func closeAllTaps(then done: (() -> Void)? = nil) {
+        tapGeneration += 1
+        creating = []
+        let closing = Array(taps.values)
         taps = [:]
+        tapQueue.async { closing.forEach { $0.stop() }; done?() }
     }
 
     private func listen(_ obj: AudioObjectID, _ a: AudioObjectPropertyAddress, _ f: @escaping () -> Void) {
@@ -223,7 +274,11 @@ final class DialStore: ObservableObject {
     private func tick() {
         if let end = timerEnd {
             now = Date()
-            if now >= end { timerEnd = nil; onTimerDone?() }
+            if now >= end {
+                timerEnd = nil
+                OggiStoria.shared.segna(.focus(secondi: timerMinutes * 60))   // 31/10: solo i focus finiti contano nell'Andamento
+                onTimerDone?()
+            }
         }
         refresh()
     }
@@ -235,8 +290,7 @@ final class DialStore: ObservableObject {
         for (obj, a, b) in listeners where obj != sysObject { var a = a; AudioObjectRemovePropertyListenerBlock(obj, &a, .main, b) }
         listeners.removeAll { $0.0 != sysObject }
         listenVolume()
-        taps.values.forEach { $0.stop() }
-        taps = [:]
+        closeAllTaps()
         applyTaps()
     }
 
@@ -247,6 +301,8 @@ final class DialStore: ObservableObject {
     private var lastRefresh = Date.distantPast
     func refresh() {
         if let d = demoApps { if apps != d { apps = d }; return }
+        // 09/11: mentre un tap nasce (magari con l'avviso aperto) il thread principale non interroga l'audio: resterebbe in coda dietro di lui.
+        if !creating.isEmpty { return }
         // 13/10, Pulsar leggera: al massimo una volta ogni 3 secondi (prima: a ogni secondo e a ogni cambio dei processi audio)
         if Leggera.on, Date().timeIntervalSince(lastRefresh) < 3 { return }
         lastRefresh = Date()
@@ -254,6 +310,9 @@ final class DialStore: ObservableObject {
         var groups: [String: MixApp] = [:]
         for obj in caList(sysObject, kAudioHardwarePropertyProcessObjectList) {
             let pid = caValue(obj, kAudioProcessPropertyPID, kAudioObjectPropertyScopeGlobal, pid_t(-1))
+            // 09/11: Pulsar non si regola da sola. Il suo tap la faceva risultare "in chiamata" (ingresso attivo), quindi si chiudeva e
+            // riapriva più volte al secondo; e il suono rimandato verrebbe ricatturato dallo stesso tap.
+            if pid == ProcessInfo.processInfo.processIdentifier { continue }
             let bundle = caString(obj, kAudioProcessPropertyBundleID) ?? ""
             let playing = caValue(obj, kAudioProcessPropertyIsRunningOutput, kAudioObjectPropertyScopeGlobal, UInt32(0)) != 0
             var owner: NSRunningApplication?
@@ -270,6 +329,7 @@ final class DialStore: ObservableObject {
             var g = groups[id] ?? MixApp(id: id, name: name, icon: icon, processes: [], playing: false)
             g.processes.append(obj)
             g.playing = g.playing || playing
+            if caValue(obj, kAudioProcessPropertyIsRunningInput, kAudioObjectPropertyScopeGlobal, UInt32(0)) != 0 { g.inCall = true }
             groups[id] = g
         }
         // in lista: chi suona adesso, più chi ha un volume diverso dal 100% (così il cursore non sparisce in pausa)
@@ -289,15 +349,40 @@ final class DialStore: ObservableObject {
         for (id, tap) in taps {
             let g = gain(id)
             let procs = lastGroups[id]?.processes.sorted()
-            if g >= 0.999 || procs == nil || procs != tap.processes.sorted() { tap.stop(); taps[id] = nil }
+            if g >= 0.999 || procs == nil || procs != tap.processes.sorted() || lastGroups[id]?.inCall == true { closeTap(tap); taps[id] = nil; continue }
+            // 29/10: il tap zittisce l'app all'origine. Se dopo 2 s non è arrivato un solo campione di suono
+            // mentre l'app suona, il tap non funziona: si chiude, l'app torna a suonare e per 60 s non si riprova.
+            if Date().timeIntervalSince(tap.createdAt) > 2, lastGroups[id]?.playing == true, tap.peakIn == 0 {
+                ghieraLog("tap MUTO chiuso per \(id): chiamate=\(tap.callbacks) \(tap.layout) uscita=\(uid)")
+                closeTap(tap); taps[id] = nil
+                brokenUntil[id] = Date().addingTimeInterval(60)
+                tapError = true
+            }
         }
-        for (id, app) in lastGroups where taps[id] == nil {
+        for (id, app) in lastGroups where taps[id] == nil && !creating.contains(id) {
             let g = gain(id)
-            guard g < 0.999, !app.processes.isEmpty else { continue }
-            if let t = AppTap(processes: app.processes, outputUID: uid, gain: g) { taps[id] = t; tapError = false }
-            else { tapError = true }
+            guard g < 0.999, !app.processes.isEmpty, !app.inCall else { continue }   // in chiamata l'app suona da sola
+            if let until = brokenUntil[id], until > Date() { continue }
+            creating.insert(id)
+            let generation = tapGeneration, processes = app.processes
+            tapQueue.async { [weak self] in
+                let tap = AppTap(processes: processes, outputUID: uid, gain: g)
+                DispatchQueue.main.async { self?.tapFinished(id, tap, generation: generation, outputUID: uid) }
+            }
         }
     }
+
+    /// Torna sul thread principale quando il tap è nato. Se nel frattempo l'app è cambiata o il volume è al 100%, ci pensa il controllo successivo.
+    private func tapFinished(_ id: String, _ tap: AppTap?, generation: Int, outputUID uid: String) {
+        guard generation == tapGeneration else { if let tap { closeTap(tap) }; return }
+        creating.remove(id)
+        guard let tap else { tapError = true; ghieraLog("tap NON creato per \(id) uscita=\(uid)"); return }
+        let g = gain(id)
+        tap.gain = g                           // l'avviso può essere rimasto aperto a lungo: vale il volume di adesso
+        taps[id] = tap; tapError = false
+        ghieraLog("tap creato per \(id) processi=\(tap.processes.count) gain=\(g) uscita=\(uid)")
+    }
+    private var brokenUntil: [String: Date] = [:]
 
     func setGain(_ id: String, _ value: Float) {
         let v = max(0, min(1, value))
@@ -398,7 +483,7 @@ private enum Ghiera {
     static var scheme: ColorScheme { mode.scheme }
     static var face: AnyShapeStyle {
         switch mode {
-        case .notte, .bianco: return AnyShapeStyle(LinearGradient(colors: [Night.barTop, Night.bar], startPoint: .top, endPoint: .bottom))
+        case .notte, .bianco, .carbone: return AnyShapeStyle(LinearGradient(colors: [Night.barTop, Night.bar], startPoint: .top, endPoint: .bottom))
         case .sfondo: return AnyShapeStyle(Color.primary.opacity(0.06))
         }
     }
@@ -417,7 +502,7 @@ private struct GhieraSurface: ViewModifier {
         let shape = DockShape(r: DialView.r, look: edge)
         switch mode {
         // Dark e White Matte: fondo sulla scheda grafica (bordi.swift), così la goccia si deforma senza perdere fotogrammi
-        case .notte, .bianco: content.background(DockLayerFill(r: DialView.r, look: edge, top: NSColor(edge.joinTop > 0.5 ? Night.bar : Night.barTop), bottom: NSColor(Night.bar)))
+        case .notte, .bianco, .carbone: content.background(DockLayerFill(r: DialView.r, look: edge, top: NSColor(edge.joinTop > 0.5 ? Night.bar : Night.barTop), bottom: NSColor(Night.bar)))
         case .sfondo: content.glassEffect(.regular.tint(Color(nsColor: wall.info(edge).veil)), in: shape)   // Liquid Glass + velo dello sfondo
         }
     }
@@ -609,10 +694,17 @@ private struct MixRow: View {
                 .help(linked ? T("Collegata alla ghiera", "Linked to the dial") : T("Collega alla ghiera", "Link to the dial"))
                 Text(app.name).font(.system(size: 12.5)).foregroundStyle(app.playing ? Ghiera.fg : Ghiera.t2).lineLimit(1)
                 Spacer()
-                Text(g == 0 ? "MUTE" : "\(Int((g * 100).rounded()))%").font(Ghiera.mono).tracking(1.2)
-                    .foregroundStyle(g == 0 ? Ghiera.amber : Ghiera.t2)
+                if app.inCall {
+                    Text(T("IN CHIAMATA", "IN A CALL")).font(Ghiera.mono).tracking(1.2).foregroundStyle(Ghiera.t2)
+                } else {
+                    Text(g == 0 ? "MUTE" : "\(Int((g * 100).rounded()))%").font(Ghiera.mono).tracking(1.2)
+                        .foregroundStyle(g == 0 ? Ghiera.amber : Ghiera.t2)
+                }
             }
-            ThinSlider(value: Double(g)) { store.setGain(app.id, Float($0)) }
+            // in chiamata il cursore resta dov'è ma non agisce: il volume della chiamata è quello del Mac
+            ThinSlider(value: app.inCall ? 1 : Double(g)) { if !app.inCall { store.setGain(app.id, Float($0)) } }
+                .opacity(app.inCall ? 0.35 : 1)
+                .help(app.inCall ? T("In chiamata il volume si regola con quello del Mac", "During a call, use the Mac volume") : "")
         }
         .padding(.vertical, 10)
         .overlay(alignment: .bottom) { Rectangle().fill(Ghiera.fg.opacity(0.07)).frame(height: 1) }

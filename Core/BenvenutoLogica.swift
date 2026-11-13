@@ -13,6 +13,6 @@ enum BenvenutoLogica {
 
     /// I moduli a pagamento non partono finché il benvenuto è aperto: così nessuno chiede un permesso prima della scelta.
     /// Lite (fuori dal registro) parte subito come sempre. Senza benvenuto non aspetta nessuno.
-    static let moduliAPagamento: Set<String> = ["agente", "ghiera", "isola", "griglia", "anima", "muta", "rowline"]
+    static let moduliAPagamento: Set<String> = ["agente", "ghiera", "isola", "griglia", "anima", "muta", "rowline", "trackpad", "terminale", "barradev"]
     static func moduliInAttesa(apreBenvenuto: Bool) -> Set<String> { apreBenvenuto ? moduliAPagamento : [] }
 }

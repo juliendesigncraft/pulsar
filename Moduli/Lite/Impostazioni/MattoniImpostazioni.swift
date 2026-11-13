@@ -277,8 +277,8 @@ struct Interruttore: View {
     var body: some View {
         Button(action: tocca) {
             ZStack(alignment: acceso ? .trailing : .leading) {
-                Capsule().fill(acceso ? m.a2 : m.t1.opacity(m.chiaro ? 0.13 : 0.16))
-                Circle().fill(m.manopola).padding(2)
+                Capsule().fill(acceso ? m.scelta : m.t1.opacity(m.chiaro ? 0.13 : 0.16))
+                Circle().fill(acceso && m.carbone && !m.chiaro ? m.primT : m.manopola).padding(2)
                     .shadow(color: .black.opacity(m.chiaro ? 0.14 : 0.2), radius: 1, y: 0.5)
             }
             .frame(width: 34, height: 20)
@@ -313,9 +313,9 @@ struct RigaScelta: View {
                     Button { cambia(o.id); rileggiDopo($giro, pagina) } label: {
                         Text(o.titolo)
                             .font(.system(size: MisureImpostazioni.testo - 1))
-                            .foregroundStyle(o.id == corrente ? m.a2 : m.t2)
+                            .foregroundStyle(o.id == corrente ? m.scelta : m.t2)
                             .padding(.horizontal, 10).frame(height: 24)
-                            .background(Capsule().fill(o.id == corrente ? m.a2.opacity(m.chiaro ? 0.13 : 0.16) : .clear))
+                            .background(Capsule().fill(o.id == corrente ? m.scelta.opacity(m.chiaro ? 0.13 : 0.16) : .clear))
                             .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
@@ -441,7 +441,7 @@ struct TastoImpostazioni: View {
                 .font(.system(size: MisureImpostazioni.testo - 1))
                 .foregroundStyle(principale ? (m.chiaro ? m.manopola : m.primT) : m.t1)
                 .padding(.horizontal, 12).frame(height: 26)
-                .background(Capsule().fill(principale ? m.a2 : m.t1.opacity(m.chiaro ? 0.07 : 0.09)))
+                .background(Capsule().fill(principale ? m.scelta : m.t1.opacity(m.chiaro ? 0.07 : 0.09)))
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -535,9 +535,9 @@ struct RigaSceltaMolte: View {
                     } label: {
                         Text(o.titolo)
                             .font(.system(size: MisureImpostazioni.testo - 1))
-                            .foregroundStyle(scelta ? m.a2 : m.t2)
+                            .foregroundStyle(scelta ? m.scelta : m.t2)
                             .padding(.horizontal, 10).frame(height: 24)
-                            .background(Capsule().fill(scelta ? m.a2.opacity(m.chiaro ? 0.13 : 0.16) : m.t1.opacity(m.chiaro ? 0.05 : 0.06)))
+                            .background(Capsule().fill(scelta ? m.scelta.opacity(m.chiaro ? 0.13 : 0.16) : m.t1.opacity(m.chiaro ? 0.05 : 0.06)))
                             .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)

@@ -48,6 +48,8 @@ struct PaginaAgent: View {
                         }
                     }
                     .attenuata(!Self.acceso)
+                    // 01/11: il ponte con l'iPhone. Spento di serie, apre una porta solo se lo accendi tu.
+                    GruppoTelefono().attenuata(!Self.acceso)
                     // la voce del menu "Rimetti ghiere e colonna" c'è se Ghiere o Claude Code sono sbloccati, anche a modulo spento:
                     // sta nella pagina Ghiere, e qui solo quando le Ghiere sono bloccate (così chi ha solo Pulsar Agent la trova lo stesso)
                     if RegistroModuli.shared.bloccato("ghiera") {

@@ -39,6 +39,10 @@ final class FirstClickHost<V: View>: NSHostingView<V> {
 struct NotchShape: Shape {
     var shoulder: CGFloat = 10
     var bottom: CGFloat = 18
+    var animatableData: CGFloat {   // 09/11: il raggio in basso si anima quando l'isola si apre e si chiude
+        get { bottom }
+        set { bottom = newValue }
+    }
     func path(in r: CGRect) -> Path {
         var p = Path()
         let s = shoulder

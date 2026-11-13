@@ -150,13 +150,31 @@ final class KeySounds {
         engine.stop()
         let hw = engine.outputNode.outputFormat(forBus: 0)
         if hw.sampleRate > 0 {
+            // 30/10: cuffie Bluetooth in modalità chiamata = uscita mono a 16 kHz. Il limitatore è un effetto e non converte
+            // la frequenza: se entra a 48 kHz ed esce a 16, engine.start() fallisce e (con try?) restava il silenzio.
+            // Il mixer invece converte da solo: mixer → limitatore → uscita, tutti nel formato dell'uscita.
+            engine.disconnectNodeOutput(engine.mainMixerNode)
             engine.disconnectNodeOutput(limiter)
+            engine.connect(engine.mainMixerNode, to: limiter, format: hw)
             engine.connect(limiter, to: engine.outputNode, format: hw)
         }
         setLimiter()
         guard enabled else { return }
         engine.prepare()
-        if (try? engine.start()) != nil { voices.forEach { $0.play() } }
+        do {
+            try engine.start()
+            voices.forEach { $0.play() }
+            suoniLog("motore riavviato: uscita \(Int(hw.sampleRate)) Hz, \(hw.channelCount) canali")
+        } catch {
+            suoniLog("motore NON riavviato: \(error) uscita \(Int(hw.sampleRate)) Hz, \(hw.channelCount) canali")
+        }
+    }
+
+    private func suoniLog(_ s: String) {
+        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Pulsar-suoni.log")
+        let line = "\(ISO8601DateFormatter().string(from: Date())) \(s)\n"
+        if let h = try? FileHandle(forWritingTo: url) { h.seekToEndOfFile(); h.write(Data(line.utf8)); try? h.close() }
+        else { try? line.write(to: url, atomically: true, encoding: .utf8) }
     }
 
     var hasPermission: Bool { AXIsProcessTrusted() }
@@ -212,8 +230,7 @@ final class KeySounds {
         }
         audioQ.async { [weak self] in            // anche l'avvio del motore: mai sul filo principale
             guard let self, !self.engine.isRunning else { return }
-            try? self.engine.start()
-            self.voices.forEach { $0.play() }
+            self.restartEngine()      // 30/10: stessi collegamenti dell'uscita attuale (cuffie a 16 kHz comprese)
         }
         installMonitors()
     }
@@ -370,7 +387,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let m = BarraOrdine.leggi("pulsar.main") { BarraOrdine.scrivi("pulsar.separator", m + 1) }
         makeStatusItems()
         applyBarState()
-        barraGuardia = BarraGuardia(posizione: { [weak self] in self?.statusItem.button?.window?.frame },
+        barraGuardia = BarraGuardia(posizione: { [weak self] in self?.statusItem?.button?.window?.frame },
                                     attiva: { [weak self] in self?.barCollapsed ?? false },
                                     ricrea: { [weak self] in self?.rebuildStatusItems() })
         barraGuardia?.avvia()
@@ -397,6 +414,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         [agent, Anima.shared, isola, griglia, dial, temi, muta].forEach(registro.registra)
         registro.registra(ModuloRowline.shared)   // 19/10: Rowline dentro Complete
         registro.registra(ModuloLanciatori.shared)   // 24/10: i Lanciatori nella Lite (Moduli/Lanciatori)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { SalutoAvvio.mostra() }   // 13/11: il saluto all'avvio, come coucou
+        registro.registra(ModuloInput.shared)        // 13/11: Mouse e tastiera (Moduli/Input), spento di serie
+        DispatchQueue.global(qos: .utility).async { SuperTasto.pulisciSeRimasta() }   // Caps Lock torna Caps Lock dopo una chiusura brusca
+        registro.registra(ModuloSistema.shared)      // 13/11: Sistema, Rete, Manutenzione (Moduli/Sistema), spento di serie
+        registro.registra(ModuloUtilita.shared)      // 13/11: Utilità (Moduli/Utilita), spente di serie
+        registro.registra(ModuloTrackpad.shared)     // 06/11: i bordi del trackpad (Moduli/Trackpad), spenti di serie
+        registro.registra(ModuloTerminale.shared)    // 07/11: il Terminale del notch (Moduli/Terminale), spento di serie
+        registro.registra(ModuloBarraSviluppo.shared)   // 07/11: branch, server e limite nella barra (Moduli/Sviluppo), spenta di serie
         LicenzaViva.shared.onChange = {
             RegistroModuli.shared.applica(sbloccati: LicenzaViva.shared.sbloccati)
             NotificationCenter.default.post(name: .licenzaCambiata, object: nil)   // le pagine dei moduli passano da bloccate a sbloccate
@@ -486,7 +511,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// Dal titolo maiuscolo della sezione al nome da riga, con il conteggio tra parentesi quando c'è.
-    private static func sectionName(_ header: String) -> (String, String) {
+    static func sectionName(_ header: String) -> (String, String) {
         let count = header.range(of: "(").map { String(header[$0.lowerBound...]).replacingOccurrences(of: " / ", with: " su ") } ?? ""
         let h = header.uppercased()
         func n(_ it: String, _ en: String) -> String { (T(it, en) + (count.isEmpty ? "" : "  " + count.lowercased())) }
@@ -511,7 +536,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ]
         // 19/10 sera: Isola, Voce e Claude non stanno più qui ma nella fila "Pezzi di Pulsar", con tutti gli altri pezzi.
         // Stesso elenco e stessi interruttori del benvenuto e delle pagine delle Impostazioni (VoceBenvenuto.tutte).
-        let moduli: [QuickTile] = VoceBenvenuto.tutte.map { v in
+        var moduli: [QuickTile] = VoceBenvenuto.tutte.map { v in
             QuickTile(symbol: v.pagina.simbolo, title: v.id == "agente" ? "Claude" : v.pagina.titolo, on: v.valore(),
                       act: close { v.cambia(!v.valore()) })
         }
@@ -565,6 +590,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             item.target = self
             item.representedObject = bundleID
             item.state = isOn ? .on : .off
+            item.identifier = NSUserInterfaceItemIdentifier("pulsar.interruttore")
             let icon: NSImage? = running[bundleID]?.bundleURL.map { IconeApp.shared.icona($0.path) } ?? running[bundleID]?.icon
                 ?? info["path"].map { IconeApp.shared.icona($0) }
             if let icon = icon.flatMap({ $0.copy() as? NSImage }) {
@@ -765,25 +791,141 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if isQuickToggle {
             toggleBar()
         } else {
-            // Trucco standard: assegna il menu, simula il click per aprirlo, poi lo stacca in menuDidClose.
-            statusItem.menu = mainMenu
-            statusItem.button?.performClick(nil)
+            // 12/11 (VORSSAINT.md, ondata 1): il clic apre il pannello a schede. Il menu completo resta in fondo al pannello.
+            if PannelloBarra.shared.aperto { PannelloBarra.shared.chiudi(); return }
+            guard let b = statusItem.button else { return }
+            PannelloBarra.shared.fornisci = { [weak self] in self?.datiPannello() ?? DatiPannello(schede: [], piede: []) }
+            PannelloBarra.shared.mostra(da: b)
         }
     }
 
+    /// Il menu di prima, intero (dal tasto "Menu completo" del pannello).
+    private func apriMenuCompleto() {
+        // Trucco standard: assegna il menu, simula il click per aprirlo, poi lo stacca in menuDidClose.
+        statusItem.menu = mainMenu
+        statusItem.button?.performClick(nil)
+    }
+
+    /// 12/11: i dati del pannello a schede. Stesse voci e stessi stati del menu (buildFullMenu), divise in cinque schede:
+    /// Rapidi (tasti rapidi, altri interruttori, azioni), Pezzi di Pulsar, App in background, Scrivania, Strumenti.
+    func datiPannello() -> DatiPannello {
+        let pannello = PannelloBarra.shared
+        let chiudi = { pannello.chiudi() }
+        let ricarica = { pannello.ricarica() }
+        func rapido(_ t: QuickTile, interruttore: Bool) -> VocePannello {
+            VocePannello(titolo: t.title, simbolo: t.symbol, immagine: nil, acceso: interruttore ? t.on : nil, nascosta: false, figli: [],
+                         esegui: interruttore ? { t.act(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: ricarica) }
+                                              : { chiudi(); DispatchQueue.main.async(execute: t.act) })
+        }
+        let full = NSMenu()
+        buildFullMenu(full)
+        let sezioni = LettorePannello.sezioni(full)
+        func voci(_ items: [NSMenuItem]) -> [VocePannello] { items.compactMap { LettorePannello.voce($0, chiudi: chiudi, ricarica: ricarica) } }
+        func inizia(_ t: String?, _ p: [String]) -> Bool { guard let u = t?.uppercased() else { return false }; return p.contains { u.hasPrefix($0) } }
+
+        // Rapidi: i tasti rapidi di prima, poi gli altri interruttori (senza doppioni), poi le azioni
+        var rapidi: [VocePannello] = [
+            rapido(QuickTile(symbol: "wand.and.stars", title: T("Barra pulita", "Clean bar"), on: barCollapsed, act: { [weak self] in self?.toggleBar() }), interruttore: true),
+            rapido(QuickTile(symbol: PulsarTema.attuale.chiaro ? "sun.max" : "moon", title: T("Tema: ", "Theme: ") + PulsarTema.attuale.title, on: false,
+                             act: { [weak self] in self?.bloccatoOppure("temi") { self?.agent.cycleMode() } }), interruttore: false),
+        ]
+        rapidi.append(rapido(QuickTile(symbol: "square.on.square.intersection.dashed", title: T("Effetto vetro", "Glass effect"), on: Impostazioni.bool(.vetroPannelli),
+                                       act: { Impostazioni.set(!Impostazioni.bool(.vetroPannelli), .vetroPannelli); pannello.chiudi() }), interruttore: true))   // 12/11
+        var titoli = Set(rapidi.map(\.titolo))
+        var azioni: [VocePannello] = []
+        for (t, items) in sezioni where inizia(t, ["INTERRUTTORI", "SWITCHES"]) {
+            for v in voci(items) where !titoli.contains(v.titolo) { rapidi.append(v); titoli.insert(v.titolo) }
+        }
+        for (t, items) in sezioni where inizia(t, ["AZIONI", "ACTIONS"]) { azioni = voci(items) }
+
+        var pezzi: [VocePannello] = VoceBenvenuto.tutte.map { v in
+            rapido(QuickTile(symbol: v.pagina.simbolo, title: v.id == "agente" ? "Claude" : v.pagina.titolo, on: v.valore(),
+                             act: { v.cambia(!v.valore()) }), interruttore: true)
+        }
+
+        var app: [GruppoPannello] = [], scrivania: [GruppoPannello] = [], strumenti: [GruppoPannello] = [], piede: [VocePannello] = []
+        for (t, items) in sezioni {
+            let (nome, _) = Self.sectionName(t ?? "")
+            if inizia(t, ["APP IN BACKGROUND", "BACKGROUND APPS"]) { app.append(GruppoPannello(titolo: nome, voci: voci(items))) }
+            else if inizia(t, ["SCRIVANIA", "DESKTOP"]) { scrivania.append(GruppoPannello(titolo: nome, voci: voci(items))) }
+            else if inizia(t, ["INTERRUTTORI", "SWITCHES", "AZIONI", "ACTIONS"]) { continue }
+            else if t != nil { strumenti.append(GruppoPannello(titolo: nome, voci: voci(items))) }
+            else {
+                // fuori sezione: Licenza, Cerca aggiornamenti, Impostazioni, Esci. Nel piede, tranne il riassunto della licenza.
+                for i in items where i.action != nil {
+                    if let v = LettorePannello.voce(i, chiudi: chiudi, ricarica: ricarica) {
+                        piede.append(VocePannello(titolo: i.keyEquivalent == "q" ? T("Esci", "Quit") : v.titolo.replacingOccurrences(of: "…", with: ""),
+                                                  simbolo: nil, immagine: nil, acceso: nil, nascosta: false, figli: [], esegui: v.esegui))
+                    }
+                }
+            }
+        }
+        piede.insert(VocePannello(titolo: T("Menu completo", "Full menu"), simbolo: nil, immagine: nil, acceso: nil, nascosta: false, figli: [],
+                                  esegui: { [weak self] in chiudi(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { self?.apriMenuCompleto() } }),
+                     at: max(0, piede.count - 1))
+
+        var schede = [SchedaPannello(id: "rapidi", titolo: T("Rapidi", "Quick"), simbolo: "switch.2",
+                                     gruppi: [GruppoPannello(titolo: nil, voci: rapidi), GruppoPannello(titolo: T("Azioni", "Actions"), voci: azioni)]),
+                      SchedaPannello(id: "pezzi", titolo: T("Pezzi di Pulsar", "Pulsar pieces"), simbolo: "square.grid.2x2",
+                                     gruppi: [GruppoPannello(titolo: nil, voci: pezzi)])]
+        if !app.isEmpty { schede.append(SchedaPannello(id: "app", titolo: T("App in background", "Background apps"), simbolo: "square.stack.3d.up", gruppi: app)) }
+        if !scrivania.isEmpty { schede.append(SchedaPannello(id: "scrivania", titolo: T("Scrivania", "Desktop"), simbolo: "folder", gruppi: scrivania)) }
+        schede.append(SchedaPannello(id: "utilita", titolo: T("Utilità", "Utilities"), simbolo: "wand.and.rays",
+                                     gruppi: Utilita.gruppiPannello(chiudi: chiudi, ricarica: ricarica)))   // 13/11, ondata 2
+        if ModuloInput.shared.acceso, !bloccato("input") {      // 13/11, ondata 4
+            schede.append(SchedaPannello(id: "input", titolo: T("Mouse e tastiera", "Mouse and keyboard"), simbolo: "keyboard",
+                                         gruppi: ModuloInput.gruppiPannello(chiudi: chiudi, ricarica: ricarica)))
+        }
+        if ModuloSistema.shared.acceso, !bloccato("sistema") {   // 13/11, ondata 3
+            schede.append(SchedaPannello(id: "sistema", titolo: T("Sistema", "System"), simbolo: "cpu", gruppi: [], vista: AnyView(SchedaSistema()), altezza: 300))
+            schede.append(SchedaPannello(id: "rete", titolo: T("Rete", "Network"), simbolo: "network", gruppi: [], vista: AnyView(SchedaRete()), altezza: 210))
+            schede.append(SchedaPannello(id: "manutenzione", titolo: T("Manutenzione", "Maintenance"), simbolo: "arrow.triangle.2.circlepath",
+                                         gruppi: [], vista: AnyView(SchedaManutenzione()), altezza: 380))
+        }
+        if !strumenti.isEmpty { schede.append(SchedaPannello(id: "strumenti", titolo: T("Strumenti", "Tools"), simbolo: "wrench.and.screwdriver", gruppi: strumenti)) }
+        return DatiPannello(schede: schede, piede: piede)
+    }
+
     func menuDidClose(_ menu: NSMenu) {
-        statusItem.menu = nil // altrimenti il menu intercetterebbe anche i click destri futuri
+        statusItem?.menu = nil // altrimenti il menu intercetterebbe anche i click destri futuri
     }
 
     /// 19/10: la guardia sposta le due icone scrivendo le posizioni e ricreandole (macOS le rilegge solo alla nascita).
-    private func rebuildStatusItems() {
+    /// 07/11, misurato nella Pulsar vera: le posizioni salvate sparivano dopo ogni ricreazione, le icone nuove nascevano
+    /// a sinistra di tutte e la Barra pulita non nascondeva più niente. Ora si toglie, si libera, si riscrive e solo dopo si ricrea.
+    private var ricreando = false     // una ricreazione alla volta: la seconda a metà della prima trovava le icone già tolte (crash)
+    private func rebuildStatusItems(poi: (() -> Void)? = nil) {
+        guard !ricreando, let vecchia = statusItem, let vecchioSep = separatorItem else { poi?(); return }
+        ricreando = true
         let m = BarraOrdine.leggi("pulsar.main") ?? 420
-        NSStatusBar.system.removeStatusItem(separatorItem)
-        NSStatusBar.system.removeStatusItem(statusItem)
-        BarraOrdine.scrivi("pulsar.main", m)            // togliere un'icona può cancellarne la posizione salvata
-        BarraOrdine.scrivi("pulsar.separator", m + 1)
-        makeStatusItems()
-        applyBarState()
+        NSStatusBar.system.removeStatusItem(vecchioSep)
+        NSStatusBar.system.removeStatusItem(vecchia)
+        // Causa vera (registro del 07/11): la posizione la cancella la vecchia icona quando viene liberata, e prima si liberava
+        // solo in makeStatusItems, all'assegnazione della nuova: DOPO la riscrittura. Si liberano qui, subito.
+        statusItem = nil
+        separatorItem = nil
+        // La cancellazione arriva con un ritardo che cambia (misurato: da subito a dopo 0,6 s). Si riscrive e si rilegge
+        // finché le due posizioni non restano per 0,3 s di fila (al massimo 3 s); solo allora nascono le icone nuove.
+        func quandoStabili(_ giri: Int, _ fatto: @escaping () -> Void) {
+            BarraOrdine.scrivi("pulsar.main", m)
+            BarraOrdine.scrivi("pulsar.separator", m + 1)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                if BarraOrdine.posizioniPerse && giri < 10 { quandoStabili(giri + 1, fatto) } else { fatto() }
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { quandoStabili(0) { [weak self] in
+            guard let self else { return }
+            self.makeStatusItems()
+            self.applyBarState()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                if BarraOrdine.posizioniPerse {      // le icone nuove le hanno già lette: basta rimetterle per il prossimo avvio
+                    BarraOrdine.scrivi("pulsar.main", m)
+                    BarraOrdine.scrivi("pulsar.separator", m + 1)
+                }
+                self.ricreando = false
+                poi?()
+            }
+        } }
     }
 
     private func makeStatusItems() {
@@ -808,6 +950,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // MARK: Barra pulita
 
     @objc private func toggleBar() {
+        // 07/11 (l'autore: "il clic destro non mi nasconde più le icone"): le posizioni salvate erano sparite mentre Pulsar girava.
+        // Misurato: senza posizione macOS mette le due icone a sinistra di tutte, e chiudere nasconde solo ciò che sta a sinistra (niente).
+        // Prima di chiudere, se mancano, si riscrivono e si ricreano le icone: tornano accanto a quelle di sistema.
+        if !barCollapsed && BarraOrdine.posizioniPerse {
+            rebuildStatusItems { [weak self] in self?.barCollapsed = true; self?.applyBarState() }
+            return
+        }
         barCollapsed.toggle()
         applyBarState()
     }
@@ -821,11 +970,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func applyBarState() {
-        separatorItem.length = barCollapsed ? collapsedLength : expandedLength
+        separatorItem?.length = barCollapsed ? collapsedLength : expandedLength
         // 14/10 sera: il separatore resta SEMPRE visibile. Nasconderlo a barra aperta (per togliere lo slot di 18 pt)
         // faceva perdere a macOS la sua posizione: riacceso rinasceva altrove e la Barra pulita non nascondeva più niente
         // (l'autore: "perché Pulsar non mi nasconde le icone?"). Meglio lo spazietto che la funzione rotta.
-        separatorItem.isVisible = true
+        separatorItem?.isVisible = true
     }
 
     // MARK: Costruzione voci
@@ -845,6 +994,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         item.target = self
         item.state = on ? .on : .off
         item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: title)
+        item.identifier = NSUserInterfaceItemIdentifier("pulsar.interruttore")   // 12/11: il pannello la mostra con l'interruttore
         return item
     }
 

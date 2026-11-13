@@ -29,13 +29,24 @@ I built Pulsar with Claude. I designed every part, Claude wrote the Swift with m
 - Launchers: your sites and Steam games next to the Dock, your Mac apps in a box on the desktop
 
 **In the menu bar**
-- Hide the icons you don't need, your desktop in a menu, the small system switches
+- One panel with tabs instead of a long menu: quick switches, Pulsar pieces, background apps, your desktop
+- Hide the icons you don't need and the small system switches (dark mode, keep awake, hidden files...)
+- Utilities: quit an app when you close its last window, cut and paste files in Finder, paste without
+  formatting, clean tracking from copied links, eject all disks, mute the microphone, pick a color, switch audio
+- System and network: CPU, GPU, memory and battery live, network speed, a speed test, app updates,
+  a cleaner and an uninstaller that only ever move things to the Trash
+- Keyboard and mouse: text snippets, a super key on Caps Lock, three-finger middle click, key debounce,
+  mouse side buttons, smooth scrolling, focus follows mouse, install an app straight from a .dmg
 - Keyboard sounds in every app: twelve mechanical keyboards and a typewriter
 
 **Everywhere**
 - Rowline: your windows side by side in a row that scrolls (⌃⌥⌘F)
 - Voice: hold ⌃⌥ to dictate, ⌃⌘ to give a command, ⌃⇧ to circle something and ask
-- Dark Matte and White Matte, for Pulsar and, if you want, macOS, the wallpaper and the folders you pick
+- Three themes: Dark Matte, White Matte and Carbone (near black, with your macOS accent color), for Pulsar and,
+  if you want, macOS, the wallpaper and the folders you pick; an optional glass effect on the panels
+- A short hello in the notch when Pulsar starts (you can turn it off)
+
+Every extra stays off until you turn it on, at first launch or later from the menu bar.
 
 ## Build it
 

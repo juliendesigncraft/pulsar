@@ -18,13 +18,13 @@ import AppKit
 import SwiftUI
 
 enum PulsarTema: String, CaseIterable {
-    case darkMatte = "dark-matte", whiteMatte = "white-matte"
-    var title: String { self == .darkMatte ? "Dark Matte" : "White Matte" }
-    var look: AgentMode { self == .darkMatte ? .notte : .bianco }
+    case darkMatte = "dark-matte", whiteMatte = "white-matte", carbone = "carbone"   // 12/11: Carbone
+    var title: String { switch self { case .darkMatte: return "Dark Matte"; case .whiteMatte: return "White Matte"; case .carbone: return "Carbone" } }
+    var look: AgentMode { switch self { case .darkMatte: return .notte; case .whiteMatte: return .bianco; case .carbone: return .carbone } }
     var chiaro: Bool { self == .whiteMatte }
 
     static var attuale: PulsarTema {
-        PulsarTema(rawValue: Impostazioni.string(.pulsarTema) ?? "") ?? (AgentMode.saved == .bianco ? .whiteMatte : .darkMatte)
+        PulsarTema(rawValue: Impostazioni.string(.pulsarTema) ?? "") ?? (AgentMode.saved == .bianco ? .whiteMatte : AgentMode.saved == .carbone ? .carbone : .darkMatte)
     }
 }
 

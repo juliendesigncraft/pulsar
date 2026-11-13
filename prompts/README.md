@@ -41,7 +41,7 @@ Pulsar is on Gumroad, one app with a license key for the paid parts:
 - [Pulsar Lite](https://juliendesigncraft.gumroad.com/l/pulsar-lite): free, with 7 days of everything.
 - [Pulsar Agent](https://juliendesigncraft.gumroad.com/l/pulsar-agent): $7.
 - [Pulsar Mixer](https://juliendesigncraft.gumroad.com/l/pulsar-mixer): $5.
-- [Pulsar Complete](https://juliendesigncraft.gumroad.com/l/pulsar-complete): $15, everything.
+- [Pulsar Complete](https://juliendesigncraft.gumroad.com/l/pulsar-complete): $25, everything.
 
 ## License
 

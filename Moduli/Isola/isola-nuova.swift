@@ -25,12 +25,11 @@ struct IslandShellFill: View {
                 LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black.opacity(0.85), location: 0.5), .init(color: .clear, location: 1)],
                                startPoint: .top, endPoint: .bottom)
                     .frame(height: neckHeight + 26)
-                    .frame(maxHeight: .infinity, alignment: .top)
+                    .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)   // minHeight 0: a notch chiuso non deve dichiarare 58 pt, o il fondo si alza
                     .clipShape(shape)
             }
         }
-        .compositingGroup()
-        .shadow(color: .black.opacity(Theme.light ? 0.10 : 0.30), radius: 22, x: 0, y: 12)
+        // 09/11, l'autore: niente ombra sul pannello aperto. Sfocata di 22 pt non ci stava nella finestra e si vedeva tagliata di netto.
     }
 }
 
@@ -55,7 +54,7 @@ struct VCard<Content: View>: View {
                         MusicGlow(colors: motion, playing: true, strength: Theme.light ? 0.28 : 0.34)
                             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     }
-                    RadialGradient(colors: [glow.opacity(Theme.light ? 0.22 : 0.30), .clear], center: UnitPoint(x: 0.5, y: 1.25), startRadius: 0, endRadius: 260)
+                    RadialGradient(colors: [(Theme.mode == .carbone ? Volta.t1 : glow).opacity(Theme.light ? 0.22 : Theme.mode == .carbone ? 0.06 : 0.30), .clear], center: UnitPoint(x: 0.5, y: 1.25), startRadius: 0, endRadius: 260)
                         .opacity(breathe ? (up ? 1 : 0.5) : 0.85)
                         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                 }
@@ -94,7 +93,7 @@ struct VPill: View {
         case .normal: return Volta.pill
         case .primary: return Volta.prim
         case .ghost: return .clear
-        case .on: return Volta.a2.opacity(0.26)
+        case .on: return Volta.tesseraAccesa              // 13/11: in Carbone senza colore
         }
     }
     private var fg: Color {
@@ -102,7 +101,7 @@ struct VPill: View {
         case .normal: return Volta.pillT
         case .primary: return Volta.primT
         case .ghost: return Volta.t3
-        case .on: return Volta.a1
+        case .on: return Theme.mode == .carbone ? Volta.t1 : Volta.a1
         }
     }
 }
@@ -122,7 +121,9 @@ struct VWho: View {
 
 // MARK: - Testa del pannello
 
-enum IslandTab { case casa, tessere }
+enum IslandTab {
+    case casa, oggi, tessere
+}
 
 /// Nella fascia ai lati del notch, come in coucou: a sinistra casa e tessere (più Personalizza nelle tessere),
 /// a destra lo stato o, nelle tessere, i pulsanti di prima (impostazioni, griglia, volume, luce, tema, AirDrop, File, Note).
@@ -137,6 +138,7 @@ struct IslandHead: View {
         HStack(spacing: 0) {
             HStack(spacing: 2) {
                 icon("house.fill", T("Casa", "Home"), on: model.tab == .casa) { model.tab = .casa }
+                icon("checklist", T("Oggi", "Today"), on: model.tab == .oggi) { model.tab = .oggi }   // 31/10, isola-oggi.swift
                 icon("square.grid.2x2.fill", T("Tessere", "Tiles"), on: model.tab == .tessere) { model.tab = .tessere }
                 if model.tab == .tessere {
                     icon(tiles.editing ? "checkmark" : "plus", T("Personalizza", "Customize"), on: tiles.editing) { tiles.editing.toggle() }
@@ -159,7 +161,9 @@ struct IslandHead: View {
                     icon("folder", T("File", "Files")) { IslandActions.files() }
                     icon("note.text", T("Note", "Notes")) { IslandActions.notes() }
                 } else {
-                    Text(status).font(.system(size: 11.5)).foregroundStyle(Volta.t3).lineLimit(1).padding(.trailing, 4)
+                    // 31/10, l'autore: l'ora a destra del notch (al posto del riquadro con ora e data nella Casa);
+                    // nella scheda Oggi anche le tre viste, come nel riferimento di NotchOwl
+                    OggiTestaDestra(mostraViste: model.tab == .oggi, stato: model.tab == .oggi ? "" : status)
                 }
             }
             .frame(width: half)
@@ -275,7 +279,7 @@ struct ClaudeCasa: View {
                     }
                 }
             }
-            WelcomeCard(store: store).frame(width: 250)
+            // 31/10, l'autore: niente secondo riquadro; l'ora sta nella testa, a destra del notch
         }
     }
 }
@@ -317,6 +321,8 @@ struct IslandPanelContent: View {
                         s.expandedView()
                     } else if model.tab == .tessere {
                         TileRow(tiles: model.tiles, widgets: model.widgets)
+                    } else if model.tab == .oggi {
+                        IslandOggi(model: model)
                     } else {
                         IslandCasa(model: model).frame(height: 128)
                     }
@@ -422,6 +428,8 @@ private struct LoadBar: View {
 /// "la finestra a destra è carina ma noiosa").
 struct CieloPixel: View {
     private static let dark: [(Double, Double, Double)] = [(21, 23, 30), (26, 29, 37), (32, 36, 46), (40, 45, 58), (53, 60, 76), (84, 112, 146), (138, 186, 232)]
+    /// 13/11, l'autore: "anche questa tema Carbone, come lo spazio" (il cielo nero del saluto all'avvio): quasi nero, niente azzurro.
+    private static let carbone: [(Double, Double, Double)] = [(13, 11, 14), (17, 15, 18), (21, 19, 23), (27, 24, 29), (35, 32, 38), (52, 48, 56), (78, 73, 84)]
     private static let light: [(Double, Double, Double)] = [(243, 244, 247), (238, 240, 244), (232, 235, 240), (225, 229, 235), (216, 221, 229), (200, 210, 224), (172, 192, 220)]
     private static let perm: [Int] = {
         var p = Array(0..<256)
@@ -452,7 +460,7 @@ struct CieloPixel: View {
         GeometryReader { geo in
             TimelineView(.periodic(from: .now, by: 1.0 / fps)) { ctx in
                 let W = max(1, Int(ceil(geo.size.width / cell))), H = max(1, Int(ceil(geo.size.height / cell)))
-                if let img = Self.render(W: W, H: H, t: ctx.date.timeIntervalSinceReferenceDate, light: Theme.light, calm: calm) {
+                if let img = Self.render(W: W, H: H, t: ctx.date.timeIntervalSinceReferenceDate, light: Theme.light, calm: calm, carbone: Theme.mode == .carbone) {
                     Image(decorative: img, scale: 1).resizable().interpolation(.none)
                         .frame(width: CGFloat(W) * cell, height: CGFloat(H) * cell)
                 }
@@ -463,9 +471,9 @@ struct CieloPixel: View {
 
     /// Il cielo come immagine piccola (un pixel per cella), ingrandita senza sfumare: così anche a schermo intero
     /// costa poco (prima era un rettangolo disegnato per ogni cella a ogni fotogramma).
-    static func render(W: Int, H: Int, t time: Double, light: Bool, calm: Double = 0) -> CGImage? {
-        let pal = light ? Self.light : Self.dark
-        let star = light ? (120.0, 130.0, 150.0) : (196.0, 206.0, 222.0)
+    static func render(W: Int, H: Int, t time: Double, light: Bool, calm: Double = 0, carbone: Bool = false) -> CGImage? {
+        let pal = light ? Self.light : carbone ? Self.carbone : Self.dark
+        let star = light ? (120.0, 130.0, 150.0) : carbone ? (226.0, 222.0, 230.0) : (196.0, 206.0, 222.0)
         let t = time.truncatingRemainder(dividingBy: 10_000) * 0.012
         let k = 150.0 / Double(max(W, 1)) * 0.6 * 1.6            // scala del rumore come la hero (150 px di larghezza)
         var buf = [UInt8](repeating: 255, count: W * H * 4)
@@ -640,10 +648,7 @@ struct CasaFredda: View {
         let store: AgentStore?
         var body: some View {
             if media.track?.playing == true {
-                HStack(spacing: 8) {
-                    MusicCard(media: media)
-                    WelcomeCard(store: store).frame(width: 250)
-                }
+                MusicCard(media: media)   // 31/10, l'autore: un riquadro solo, l'ora sta nella testa a destra del notch
             } else {
                 WelcomeCard(store: store, volo: true, media: media)
             }

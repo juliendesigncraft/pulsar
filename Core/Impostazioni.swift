@@ -18,6 +18,7 @@ enum Chiave: String, CaseIterable {
     case agentSounds
     case agentTab
     case agentTabAuto
+    case agentTelefono         // 01/11: il ponte con l'iPhone (Pulsar Pocket), spento di serie
     case agenteFinestra
     case animaEnabled
     case animaLeggi
@@ -26,6 +27,9 @@ enum Chiave: String, CaseIterable {
     case animaParla
     case animaSoloMac
     case askedAccessibility
+    case barraDevAcceso        // 07/11: la barra di sviluppo (Moduli/Sviluppo), spenta di serie
+    case barraDevProgetto      // la cartella scelta da seguire (nil = l'ultima di Claude Code)
+    case barraDevVoci          // [branch, server, limite: Bool], tutte accese se mancano
     case askedScreenRecording   // fase 3: la richiesta di Registrazione schermo è già stata mostrata (macOS non la ripete)
     case barCollapsed
     case dialEnabled
@@ -60,6 +64,12 @@ enum Chiave: String, CaseIterable {
     case lanciatoriStash
     case lanciatoriScrivania
     case lanciatoriScrivaniaPos
+    case isolaBlocco          // 31/10: il testo della card Nota nella scheda Oggi
+    case isolaOggiOrdine      // 31/10: ordine delle card di Lavoro (scheda Oggi)
+    case isolaOggiNascoste    // 31/10: card di Lavoro spente
+    case isolaOggiStoria      // 31/10: attività aggiunte e fatte e focus per giorno (Andamento)
+    case isolaPromemoria      // 31/10: promemoria delle attività nel notch
+    case isolaPromesse        // 01/11: Promesse lette da WhatsApp e Mail (Moduli/Promesse)
     case isolaLat
     case isolaLon
     case isolaLyrics
@@ -91,9 +101,23 @@ enum Chiave: String, CaseIterable {
     case rowlineAcceso
     case riunioneNelNotch
     case temiCambiaMacOS      // fase 5: il tema cambia anche l'aspetto di macOS (acceso se mancante)
+    case utilitaAcceso        // 13/11: il modulo Utilità (Moduli/Utilita), spento di serie
+    case utilChiudiEsci, utilTagliaIncolla, utilTestoSemplice, utilPulisciLink, utilBloccaMusica   // 13/11: le sue funzioni, spente
+    case inputAcceso          // 13/11: Mouse e tastiera (Moduli/Input), spento di serie
+    case inSnippet, inSuperTasto, inClicCentrale, inRimbalzo, inTastiLaterali, inScorrimento, inFuoco   // 13/11: le sue funzioni, spente
+    case sistemaAcceso        // 13/11: Sistema, Rete e Manutenzione nel pannello (Moduli/Sistema), spento di serie
+    case avvioSaluto          // 13/11: il saluto all'avvio nel notch (Moduli/Lite/avvio.swift), acceso se mancante
+    case vetroPannelli        // 12/11: effetto vetro sul pannello della barra e su quello di Claude (spento se mancante)
     case temiScrivania        // 25/10: il tema cambia anche sfondo e cartelle scelte, solo vendita (spento se mancante)
     case temiCartelle         // 25/10: le cartelle che cambiano icona col tema (Moduli/Temi/temi-scrivania.swift)
     case tempoRegistra = "tempo.registra"
+    case terminaleAcceso       // 07/11: il Terminale del notch (Moduli/Terminale), spento di serie
+    case trackpadAcceso        // 06/11: i bordi del trackpad (Moduli/Trackpad), spento di serie
+    case trackpadBasso         // azione del bordo in basso (AzioneBordo, tracce di serie)
+    case trackpadDestro        // azione del bordo destro (volume di serie)
+    case trackpadRiscontro     // la lingua nel notch mentre si regola (accesa di serie)
+    case trackpadSensibilita   // 0...1, 0,5 di serie
+    case trackpadSinistro      // azione del bordo sinistro (luce di serie)
     case visibleDesktopCount
     case wallAccent
 }
@@ -158,6 +182,7 @@ func aspettoMigrato(_ raw: String?) -> String {
     switch raw {
     case "bianco": return "bianco"
     case "sfondo": return "sfondo"
+    case "carbone": return "carbone"   // 12/11: il tema Carbone resta dopo il riavvio
     default: return "notte"
     }
 }

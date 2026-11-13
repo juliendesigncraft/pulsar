@@ -23,11 +23,22 @@ struct Razzo: View {
         "..kwwbbwk..", "..kwwwwsk..", "..kwwwwsk..", ".kowwwwsok.", "kooswwwsook", "kokssssskok",
         "k.kssssk..k", "...koook...", "....k.k....", "..........."].map(Array.init)
     // palette Matte di Spazio (SpazioAspetto 'matte'): o e b azzurri
-    private static let pal: [Character: Color] = [
+    /// 13/11, Carbone: arancio e fiamma grigi caldi, l'oblò con l'accento di sistema (l'unico colore).
+    private static var pal: [Character: Color] {
+        guard Theme.mode == .carbone else { return palMatte }
+        var p = palMatte
+        p["o"] = Color(red: 139/255, green: 131/255, blue: 145/255); p["s"] = Color(red: 120/255, green: 114/255, blue: 126/255)
+        p["b"] = Volta.Scala.sistema(0.25)
+        return p
+    }
+    private static var flame: [Color] {
+        Theme.mode == .carbone ? [Color(white: 0.95), Color(white: 0.78), Color(white: 0.6)] : flameMatte
+    }
+    private static let palMatte: [Character: Color] = [
         "w": Color(red: 232/255, green: 230/255, blue: 239/255), "s": Color(red: 150/255, green: 156/255, blue: 184/255),
         "b": Color(red: 185/255, green: 220/255, blue: 255/255), "o": Color(red: 143/255, green: 199/255, blue: 255/255),
         "k": Color(red: 12/255, green: 14/255, blue: 22/255)]
-    private static let flame = [Color(red: 228/255, green: 240/255, blue: 255/255), Color(red: 185/255, green: 220/255, blue: 255/255),
+    private static let flameMatte = [Color(red: 228/255, green: 240/255, blue: 255/255), Color(red: 185/255, green: 220/255, blue: 255/255),
                                 Color(red: 143/255, green: 199/255, blue: 255/255)]
 
     var body: some View {

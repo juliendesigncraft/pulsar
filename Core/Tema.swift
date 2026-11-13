@@ -6,11 +6,16 @@ import AppKit
 // MARK: - Aspetto (Dark Matte, White Matte, Sfondo)
 
 enum AgentMode: String, CaseIterable {
-    case notte, bianco, sfondo
+    case notte, bianco, sfondo, carbone
     // 11/10 sera: Notte è il Dark Matte; Bianco è il White Matte (stessa grammatica, chiaro, piatto e opaco)
-    var title: String { ["notte": "Dark Matte", "bianco": "White Matte", "sfondo": T("Sfondo", "Wallpaper")][rawValue]! }
-    /// Notte, Bianco e Sfondo: colonna di icone che resta accanto al pannello.
-    var rail: Bool { self == .notte || self == .bianco || self == .sfondo }
+    // 12/11: Carbone, quasi nero con un filo di viola, card un tono sopra, interruttori monocromi (VORSSAINT.md)
+    var title: String { ["notte": "Dark Matte", "bianco": "White Matte", "sfondo": T("Sfondo", "Wallpaper"), "carbone": "Carbone"][rawValue]! }
+    /// Notte, Bianco, Carbone e Sfondo: colonna di icone che resta accanto al pannello.
+    var rail: Bool { true }
+    /// I temi a tinta piena (Dark Matte, White Matte, Carbone): stesse forme, cambiano solo i colori di Night e Volta.
+    var pieno: Bool { self != .sfondo }
+    /// I due scuri pieni: dove prima si chiedeva `== .notte` per il pannello opaco e la colonna.
+    var scuroPieno: Bool { self == .notte || self == .carbone }
     var scheme: ColorScheme { self == .bianco ? .light : .dark }
     /// Gli aspetti vecchi (Scuro, Vetro, Vetro scuro) e un valore mancante o strano diventano Dark Matte.
     static func migra(_ raw: String?) -> AgentMode { AgentMode(rawValue: aspettoMigrato(raw)) ?? .notte }
@@ -32,16 +37,17 @@ enum AgentMode: String, CaseIterable {
 enum Night {
     // 11/10 sera: in White Matte (aspetto Bianco) gli stessi nomi danno i toni chiari, così tutto Pulsar cambia insieme.
     private static var W: Bool { GhieraLook.shared.mode == .bianco }
+    private static var K: Bool { GhieraLook.shared.mode == .carbone }   // 12/11: Carbone
     private static func c(_ h: UInt32) -> Color { Color(red: Double(h >> 16 & 255) / 255, green: Double(h >> 8 & 255) / 255, blue: Double(h & 255) / 255) }
     // 11/10 sera, "matte dark": l'autore ha messo come sfondo il fondo della dimostrazione (gradiente blu grafite
     // (0.13,0.14,0.19) → (0.10,0.11,0.13)) e vuole Notte sugli stessi toni: superfici opache un po' più chiare dello
     // sfondo per staccarsi, selezioni un tono più scure, bordi bianchi al 6-8%, niente nero puro, niente lucidità.
-    static var top: Color { W ? c(0xF6F7F9) : Color(red: 0.170, green: 0.180, blue: 0.235) }     // #2B2E3C, pannello in alto
-    static var bottom: Color { W ? c(0xEEF0F3) : Color(red: 0.135, green: 0.145, blue: 0.185) }  // #22252F, pannello in basso
-    static var rail: Color { W ? c(0xE7E9EE) : Color(red: 0.115, green: 0.123, blue: 0.160) }    // #1D1F29
-    static var bar: Color { W ? c(0xEDEFF3) : Color(red: 0.145, green: 0.155, blue: 0.200) }     // #252833, colonna e ghiere in basso
-    static var barTop: Color { W ? c(0xF5F6F9) : Color(red: 0.165, green: 0.175, blue: 0.228) }  // #2A2D3A, la stessa luce in alto
-    static var barSel: Color { W ? c(0xE0E3E9) : Color(red: 0.112, green: 0.120, blue: 0.157) }  // #1C1F28, selezione: un tono più scura
+    static var top: Color { K ? c(0x1C191D) : W ? c(0xF6F7F9) : Color(red: 0.170, green: 0.180, blue: 0.235) }     // #2B2E3C, pannello in alto
+    static var bottom: Color { K ? c(0x121013) : W ? c(0xEEF0F3) : Color(red: 0.135, green: 0.145, blue: 0.185) }  // #22252F, pannello in basso
+    static var rail: Color { K ? c(0x0F0D10) : W ? c(0xE7E9EE) : Color(red: 0.115, green: 0.123, blue: 0.160) }    // #1D1F29
+    static var bar: Color { K ? c(0x151316) : W ? c(0xEDEFF3) : Color(red: 0.145, green: 0.155, blue: 0.200) }     // #252833, colonna e ghiere in basso
+    static var barTop: Color { K ? c(0x1C191D) : W ? c(0xF5F6F9) : Color(red: 0.165, green: 0.175, blue: 0.228) }  // #2A2D3A, la stessa luce in alto
+    static var barSel: Color { K ? c(0x2A262C) : W ? c(0xE0E3E9) : Color(red: 0.112, green: 0.120, blue: 0.157) }  // #1C1F28, selezione: un tono più scura
     // veli scuri trasparenti: prendono la sfumatura del pannello che hanno dietro (06/10, "troppo contrasto")
     // 11/10: negli aspetti chiari (Vetro, Sfondo chiaro) gli stessi veli più leggeri; mai bianchi
     static var sel: Color { Color.black.opacity(Theme.light ? 0.10 : 0.28) }   // selezione: lo sfondo un po' più scuro
@@ -61,7 +67,7 @@ enum Night {
     // 13/10, l'autore: "al posto del verde usa l'azzurro in tutti e due i temi; giallo, arancione e rosso un po' più matte".
     // `green` resta il nome (lo usano in tanti posti) ma è l'azzurro dei temi: #8FC7FF in Dark Matte, #3B82D0 in White Matte.
     static var red: Color { W ? c(0xC9564F) : c(0xE07A72) }
-    static var green: Color { W ? c(0x3B82D0) : c(0x8FC7FF) }
+    static var green: Color { K ? Volta.Scala.sistema(0) : W ? c(0x3B82D0) : c(0x8FC7FF) }
     static var amber: Color { W ? c(0xC2913E) : c(0xE3BC79) }
 }
 
@@ -116,7 +122,7 @@ final class GhieraLook: ObservableObject {
 enum GhieraColors {
     static var goo: (NSColor, NSColor) {
         switch GhieraLook.shared.mode {
-        case .notte, .bianco: return (NSColor(Night.barTop), NSColor(Night.bar))
+        case .notte, .bianco, .carbone: return (NSColor(Night.barTop), NSColor(Night.bar))
         case .sfondo: let v = WallpaperTint.shared.info(screen: EdgeDock.defaultScreen, side: .left).veil; return (v, v)
         }
     }
@@ -139,45 +145,59 @@ enum Volta {
     static var a3: Color { s.a3 }
     static var a4: Color { s.a4 }
     static var pill: Color { s.pill }
+    static var tesseraAccesa: Color { s.tesseraAccesa }
     static var pillT: Color { s.pillT }
     static var prim: Color { s.prim }
     static var primT: Color { s.primT }
 
     struct Scala {
         let chiaro: Bool
+        /// 12/11: Carbone. Di serie segue il tema in uso; le foto delle Impostazioni lo dicono a mano.
+        var carbone: Bool = GhieraLook.shared.mode == .carbone
         private var L: Bool { chiaro }
+        private var K: Bool { carbone && !chiaro }
         private func c(_ h: UInt32, _ a: Double = 1) -> Color {
             Color(red: Double(h >> 16 & 255) / 255, green: Double(h >> 8 & 255) / 255, blue: Double(h & 255) / 255).opacity(a)
         }
-        var body: Color { L ? c(0xF4F6F9) : c(0x1D1F29) }
-        var card: Color { L ? c(0xE8ECF2) : c(0x252836) }
-        var card2: Color { L ? c(0xDDE3EC) : c(0x2E3242) }
-        var t1: Color { L ? c(0x1C1F28) : c(0xEDEFF6) }
-        var t2: Color { L ? c(0x1C1F28, 0.6) : c(0xEDEFF6, 0.58) }
-        var t3: Color { L ? c(0x1C1F28, 0.4) : c(0xEDEFF6, 0.36) }
-        var a1: Color { L ? c(0x1F4F8C) : c(0xD6EBFF) }      // azzurro più chiaro sul scuro, più scuro sul chiaro
-        var a2: Color { L ? c(0x3B82D0) : c(0x8FC7FF) }      // l'azzurro di Spazio
-        var a3: Color { L ? c(0x7FB0E6) : c(0x5C8FCC) }
-        var a4: Color { L ? c(0xC7DDF5) : c(0x33507A) }
-        var pill: Color { L ? c(0xDCE3EE) : c(0x2F3446) }
-        var pillT: Color { L ? c(0x22283A) : c(0xDCE2F0) }
-        var prim: Color { L ? c(0xBFDDFB) : c(0xCFE6FF) }    // al posto del bianco: azzurro chiaro (l'autore, 17/10)
-        var primT: Color { L ? c(0x14304F) : c(0x13203A) }
+        var body: Color { K ? c(0x121013) : L ? c(0xF4F6F9) : c(0x1D1F29) }
+        var card: Color { K ? c(0x1C191D) : L ? c(0xE8ECF2) : c(0x252836) }
+        var card2: Color { K ? c(0x2A262C) : L ? c(0xDDE3EC) : c(0x2E3242) }
+        var t1: Color { K ? c(0xEEEBF0) : L ? c(0x1C1F28) : c(0xEDEFF6) }
+        var t2: Color { K ? c(0xFFFFFF, 0.56) : L ? c(0x1C1F28, 0.6) : c(0xEDEFF6, 0.58) }
+        var t3: Color { K ? c(0xFFFFFF, 0.34) : L ? c(0x1C1F28, 0.4) : c(0xEDEFF6, 0.36) }
+        var a1: Color { K ? Self.sistema(0.45, verso: .white) : L ? c(0x1F4F8C) : c(0xD6EBFF) }      // azzurro più chiaro sul scuro, più scuro sul chiaro
+        var a2: Color { K ? Self.sistema(0) : L ? c(0x3B82D0) : c(0x8FC7FF) }      // l'azzurro di Spazio
+        var a3: Color { K ? Self.sistema(0.35, verso: .black) : L ? c(0x7FB0E6) : c(0x5C8FCC) }
+        var a4: Color { K ? c(0x2A262C) : L ? c(0xC7DDF5) : c(0x33507A) }
+        var pill: Color { K ? c(0x2A262C) : L ? c(0xDCE3EE) : c(0x2F3446) }
+        var pillT: Color { K ? c(0xEEEBF0) : L ? c(0x22283A) : c(0xDCE2F0) }
+        var prim: Color { K ? c(0xE9E6EC) : L ? c(0xBFDDFB) : c(0xCFE6FF) }    // al posto del bianco: azzurro chiaro (l'autore, 17/10)
+        var primT: Color { K ? c(0x121013) : L ? c(0x14304F) : c(0x13203A) }
         // fase 3, finestra Impostazioni: barra laterale, fondo della pagina, gruppi e manopole. Mai bianco o nero puri.
-        var lato: Color { L ? c(0xE8ECF2) : c(0x1D1F29) }
-        var pagina: Color { L ? c(0xF4F6F9) : c(0x252836) }
-        var gruppo: Color { L ? c(0xFBFCFD) : c(0x2E3242) }
-        var manopola: Color { L ? c(0xFBFCFD) : c(0xEDEFF6) }
+        var lato: Color { K ? c(0x121013) : L ? c(0xE8ECF2) : c(0x1D1F29) }
+        var pagina: Color { K ? c(0x18151A) : L ? c(0xF4F6F9) : c(0x252836) }
+        var gruppo: Color { K ? c(0x221F24) : L ? c(0xFBFCFD) : c(0x2E3242) }
+        /// 13/11, l'autore: "l'accento deve cambiare in base al colore scelto dal sistema" (giallo, arancione...). In Carbone
+        /// l'accento è quello di Impostazioni di Sistema > Aspetto, schiarito o scurito; si usa il meno possibile.
+        static func sistema(_ k: CGFloat, verso: NSColor = .white) -> Color {
+            let a = NSColor.controlAccentColor.usingColorSpace(.sRGB) ?? .controlAccentColor
+            return Color(nsColor: k == 0 ? a : (a.blended(withFraction: k, of: verso) ?? a))
+        }
+        /// 13/11: le tessere accese (Wi-Fi, Bluetooth...): in Carbone un tono più chiaro, senza colore.
+        var tesseraAccesa: Color { K ? c(0x3A353D) : a2.opacity(0.24) }
+        /// 12/11: il colore delle scelte (interruttori, segmenti, tasto principale). Carbone: monocromo come nel reel; gli altri: l'azzurro.
+        var scelta: Color { K ? c(0xE9E6EC) : a2 }
+        var manopola: Color { K ? c(0xEEEBF0) : L ? c(0xFBFCFD) : c(0xEDEFF6) }
     }
 }
 
 enum DotColors {
     /// Gli stessi toni di NotchPulse: base blu-grafite attenuata, testa chiara. In White Matte grafite.
-    static var base: Color { Theme.light ? Color(white: 0.5) : PulseMotion.tail }
+    static var base: Color { Theme.light ? Color(white: 0.5) : Theme.mode == .carbone ? Color(white: 0.58) : PulseMotion.tail }   // 13/11 Carbone: grigio
     static var head: Color { Theme.light ? Color(white: 0.12) : .white }
     /// L'azzurro di Spazio Dark Matte (#8FC7FF; in White Matte #3B82D0, tema-matte.js): l'accento "che sale".
     /// l'autore, 12/10 sera: "il volume più si alza più diventa blu, e anche la luminosità".
-    static var azzurro: Color { Theme.light ? Color(red: 0x3B / 255, green: 0x82 / 255, blue: 0xD0 / 255) : Color(red: 0x8F / 255, green: 0xC7 / 255, blue: 1) }
+    static var azzurro: Color { Theme.mode == .carbone ? Volta.Scala.sistema(0) : Theme.light ? Color(red: 0x3B / 255, green: 0x82 / 255, blue: 0xD0 / 255) : Color(red: 0x8F / 255, green: 0xC7 / 255, blue: 1) }
     static let baseAlpha = 0.62          // il blu "a riposo" della griglia di destra: mai pieno, se no vira all'azzurro
     static let offAlpha = 0.10
 }

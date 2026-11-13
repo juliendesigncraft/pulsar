@@ -130,7 +130,7 @@ private struct ControlChip: View {
             }
             .frame(maxWidth: .infinity).frame(height: 35)        // due file da 35 + 6 = 76: riempiono la tessera, sopra e sotto uguali
             .background(RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(on == true ? Volta.a2.opacity(0.24) : over ? Volta.pill : Volta.card2))   // 17/10: toni della Casa
+                .fill(on == true ? Volta.tesseraAccesa : over ? Volta.pill : Volta.card2))   // 17/10: toni della Casa
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

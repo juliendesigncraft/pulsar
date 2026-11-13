@@ -192,7 +192,7 @@ struct ThemeSurface<S: Shape>: ViewModifier {
     var veil: Color = Theme.veil
     func body(content: Content) -> some View {
         switch mode {
-        case .notte, .bianco: content.background(shape.fill(solid))
+        case .notte, .bianco, .carbone: content.background(shape.fill(solid))
         case .sfondo: content.glassEffect(.regular.tint(veil), in: shape)
         }
     }

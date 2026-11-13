@@ -264,12 +264,49 @@ def chat_title(path):
     return ""
 
 
+USAGE_RE = re.compile(r'"usage":\{"input_tokens":(\d+),"cache_creation_input_tokens":(\d+),"cache_read_input_tokens":(\d+)')
+
+
+def window_of():
+    """31/10: quanto è grande la finestra di contesto. Claude Code non la scrive nel registro: si legge il modello
+    scelto nelle impostazioni (opus[1m] = un milione di token), altrimenti 200k."""
+    try:
+        with open(os.path.expanduser("~/.claude/settings.json")) as f:
+            return 1_000_000 if "[1m]" in str(json.load(f).get("model", "")) else 200_000
+    except Exception:
+        return 200_000
+
+
+def context_of(path):
+    """31/10 (Context Window dal banco componenti): quanto contesto usa la sessione adesso. È l'ultima risposta
+    del modello nel registro: input + cache scritta + cache letta. Legge solo la coda del file; None se non c'è."""
+    try:
+        with open(path, "rb") as f:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - 262144))
+            righe = [r for r in f.read().decode("utf-8", "ignore").splitlines() if '"isSidechain":true' not in r]
+        for r in reversed(righe):
+            m = USAGE_RE.search(r)
+            if m:
+                used = sum(int(x) for x in m.groups())
+                w = window_of()
+                return {"used": used, "window": max(w, 1_000_000 if used > w else w)}
+    except Exception:
+        pass
+    return None
+
+
 def handle(ev, state):
     name = ev.get("hook_event_name")
     s = session(state, ev)
     tool = ev.get("tool_name") or ""
     inp = ev.get("tool_input") or {}
     tid = ev.get("tool_use_id") or str(uuid.uuid4())
+
+    if name in ("UserPromptSubmit", "PostToolUse", "Stop"):
+        c = context_of(ev.get("transcript_path") or "")
+        if c:
+            s["context"] = c
 
     if name == "UserPromptSubmit" or not s.get("title"):
         t = chat_title(ev.get("transcript_path") or "")

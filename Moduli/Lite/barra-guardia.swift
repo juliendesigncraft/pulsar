@@ -29,6 +29,9 @@ enum BarraOrdine {
     static func scrivi(_ nome: String, _ v: Double) {
         UserDefaults.standard.set(v, forKey: chiave + nome)
     }
+
+    /// 07/11: macOS cancella la posizione quando un'icona viene tolta (misurato con removeStatusItem). Senza, la Barra pulita non nasconde niente.
+    static var posizioniPerse: Bool { leggi("pulsar.main") == nil || leggi("pulsar.separator") == nil }
 }
 
 /// Le icone della barra dei menu delle altre app, con chi le possiede.
@@ -88,6 +91,13 @@ final class BarraGuardia {
     }
 
     func controlla() {
+        // 07/11: posizioni sparite mentre Pulsar gira → si ricreano le icone (rebuildStatusItems riscrive 420/421), anche a barra aperta.
+        if BarraOrdine.posizioniPerse, Date().timeIntervalSince(ultimo) > 8 {
+            ultimo = Date()
+            NSLog("Pulsar barra: posizioni salvate sparite, ricreo le icone accanto a quelle di sistema")
+            ricrea()
+            return
+        }
         guard attiva(), Date().timeIntervalSince(ultimo) > 8, let mia = posizioneMia(),
               let schermo = NSScreen.screens.first(where: { $0.frame.contains(NSPoint(x: mia.midX, y: mia.midY)) }) else { return }
         let intruse = BarraLettura.icone().filter {
@@ -105,3 +115,4 @@ final class BarraGuardia {
         ricrea()
     }
 }
+

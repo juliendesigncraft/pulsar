@@ -84,6 +84,14 @@ struct AgentQuestion: Decodable, Equatable {
 /// Righe aggiunte e tolte in un file durante la richiesta (cumulative), per il +N −M e il diff al tocco.
 struct AgentChange: Decodable { let name: String; let add: Int; let rem: Int }
 
+/// 31/10 (Context Window dal banco componenti di Spazio): quanto contesto usa la sessione, dall'ultima risposta nel registro (hook.py).
+struct AgentContext: Decodable {
+    let used: Int
+    let window: Int
+    var share: Double { window > 0 ? min(1, Double(used) / Double(window)) : 0 }
+    static func k(_ n: Int) -> String { n >= 1_000_000 ? "\(n / 1_000_000)M" : "\(n / 1000)k" }
+}
+
 struct AgentSession: Decodable, Identifiable {
     let id: String
     let project: String
@@ -103,6 +111,7 @@ struct AgentSession: Decodable, Identifiable {
     var question: AgentQuestion? = nil
     var title: String? = nil
     var changes: [String: AgentChange]? = nil     // percorso intero -> +N −M
+    var context: AgentContext? = nil
 
     /// I file cambiati con i loro conteggi, dal più toccato.
     var changeList: [(path: String, change: AgentChange)] {
@@ -138,11 +147,24 @@ final class AgentStore: ObservableObject {
     /// 17/10: l'hook parla con Pulsar sul socket (agente/pulsar.sock). Il timer resta come rete di sicurezza.
     private let line = AgentSocket(path: dir.appendingPathComponent("pulsar.sock").path)
 
+    /// 01/11: il ponte con l'iPhone (Pulsar Pocket). Spento di serie: ascolta solo se l'interruttore (Impostazioni → Claude Code → iPhone) è acceso.
+    /// Il telefono risponde ai permessi come la pillola: la risposta passa dallo stesso socket dell'hook.
+    lazy var ponte = PonteTelefono(cartella: Self.dir.appendingPathComponent("telefono"), statoURL: stateURL, tema: { AgentMode.saved.rawValue }) { [weak self] id, behavior in
+        self?.line.answer(id, ["behavior": behavior])
+    }
+    var telefonoAcceso: Bool { Impostazioni.bool(.agentTelefono) }
+    func telefono(_ acceso: Bool) {
+        Impostazioni.set(acceso, .agentTelefono)
+        if acceso { ponte.avvia() } else { ponte.ferma() }
+    }
+
     func start() {
         try? FileManager.default.createDirectory(at: Self.dir, withIntermediateDirectories: true)
         try? FileManager.default.removeItem(at: aliveURL)    // il vecchio battito: ora conta il socket
         installHook()
-        line.onPing = { [weak self] in self?.tick() }
+        line.onPing = { [weak self] in self?.tick(); if self?.telefonoAcceso == true { self?.ponte.notifica() } }
+        ponte.onCambio = { NotificationCenter.default.post(name: .telefonoCambiato, object: nil) }
+        if telefonoAcceso { ponte.avvia() }
         // fase 5, 2b: le scelte delle domande stanno solo nell'Isola (Complete). Senza Isola che gira, subito al terminale.
         line.showsQuestions = {
             Registro.domandaNelNotch(isolaInEsecuzione: RegistroModuli.shared.inEsecuzione("isola"),
@@ -156,6 +178,7 @@ final class AgentStore: ObservableObject {
     func stop() {
         timer?.invalidate(); timer = nil
         line.stop()            // senza socket l'hook non aspetta il notch
+        ponte.ferma()          // il modulo è spento: il telefono non vede più niente
     }
 
     /// Dimostrazione (11/10): una sessione finta al posto di quelle vere, finché dura la ripresa.
@@ -287,6 +310,11 @@ final class AgentStore: ObservableObject {
     }
 }
 
+extension Notification.Name {
+    /// Il ponte con l'iPhone ha cambiato codice, telefoni o stato: le Impostazioni si ridisegnano.
+    static let telefonoCambiato = Notification.Name("pulsar.telefonoCambiato")
+}
+
 /// Le sezioni della colonna di Notte, come le icone di Kinso.
 enum AgentSection: String, CaseIterable {
     case work, files, approve, sessions, window   // 17/10: window = un'altra app dal vivo (agente-finestra.swift)
@@ -304,7 +332,7 @@ struct AgentSurface<S: Shape>: ViewModifier {
         switch mode {
         case .sfondo:   // 11/10: Liquid Glass col velo del colore dello sfondo dietro
             content.glassEffect(.regular.tint(veil), in: shape)
-        case .notte, .bianco:
+        case .notte, .bianco, .carbone:
             content.background(shape.fill(Night.bottom))
         }
     }
@@ -602,6 +630,9 @@ struct AgentPanel: View {
                     .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
             }
         }
+        if let c = s.context {
+            Group(title: "Context") { ContextCells(context: c).padding(12) }
+        }
         if let p = s.pending { approval(p) }
         if s.status == "done" && !s.summary.isEmpty {
             Group(title: "In plain words") {
@@ -679,6 +710,34 @@ struct AgentPanel: View {
                             value: ok ? "Passed" : "Failed", trailing: "", last: true)
                 }
             }
+        }
+    }
+}
+
+/// 31/10: la finestra di contesto come un campo di celle (dal banco componenti di Spazio): ogni cella è un cinquantesimo
+/// della finestra, le piene in azzurro. Sopra quanti token e la percentuale.
+private struct ContextCells: View {
+    let context: AgentContext
+    private let cells = 50
+    var body: some View {
+        let full = Int((context.share * Double(cells)).rounded())
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(T("\(AgentContext.k(context.used)) di \(AgentContext.k(context.window)) usati",
+                       "\(AgentContext.k(context.used)) of \(AgentContext.k(context.window)) used")).font(.system(size: 13))
+                Spacer(minLength: 8)
+                Text("\(Int((context.share * 100).rounded()))%").font(.system(size: 13)).foregroundStyle(.secondary).monospacedDigit()
+            }
+            // 01/11: .flexible() di serie vuole almeno 10 pt a colonna (25 colonne = 322 pt): nel pannello da 344 la card
+            // ne ha ~284 e la griglia spingeva tutto il pannello oltre i bordi. Con minimo 4 le celle si stringono.
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 4), spacing: 3), count: 25), spacing: 3) {
+                ForEach(0..<cells, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                        .fill(i < full ? Night.green : Color.primary.opacity(0.08))
+                        .aspectRatio(1, contentMode: .fit)
+                }
+            }
+            .animation(.easeOut(duration: 0.6), value: full)
         }
     }
 }
@@ -785,9 +844,10 @@ private struct PanelSurface<S: Shape>: ViewModifier {
     let mode: AgentMode
     let shape: S
     func body(content: Content) -> some View {
-        if mode == .notte {
+        if mode.scuroPieno {
             content
-                .background(LinearGradient(colors: [Night.top.opacity(0.985), Night.bottom.opacity(0.99)], startPoint: .top, endPoint: .bottom))   // opaco: niente vetro lucido
+                // 12/11: con "Effetto vetro" acceso il pannello lascia passare un po' di quello che c'è dietro (NightBlur sotto)
+                .background(LinearGradient(colors: [Night.top.opacity(Impostazioni.bool(.vetroPannelli) ? 0.78 : 0.985), Night.bottom.opacity(Impostazioni.bool(.vetroPannelli) ? 0.82 : 0.99)], startPoint: .top, endPoint: .bottom))   // opaco: niente vetro lucido
                 .background(NightBlur(radius: 28))
         } else {
             content.modifier(ThemeSurface(mode: mode, shape: shape))
@@ -807,7 +867,7 @@ struct RailSurface: ViewModifier {
     init(mode: AgentMode, edge: EdgeLook, veil: Color) { self.mode = mode; self.edge = edge; self.veil = veil; form = edge.form }
     func body(content: Content) -> some View {
         switch mode {
-        case .notte, .bianco:
+        case .notte, .bianco, .carbone:
             content.background(DockLayerFill(r: NightRail.r, look: edge, top: NSColor(edge.joinTop > 0.5 ? Night.bar : Night.barTop), bottom: NSColor(Night.bar)))
         default:
             content.modifier(ThemeSurface(mode: mode, shape: DockShape(r: NightRail.r, look: edge), veil: veil))
@@ -834,8 +894,8 @@ struct NightRail: View {
                 RailButton(symbol: sec.symbol, active: store.panelShown && store.section == sec,
                            badge: badge(sec), help: sec.title,
                            fg: .primary,
-                           selFill: glass ? Color(nsColor: wall.accent(edge)).opacity(0.24) : store.mode == .notte ? Night.barSel : Night.sel,
-                           ring: store.mode == .notte ? Night.bar : .clear, grande: edge.libero) { open(sec) }
+                           selFill: glass ? Color(nsColor: wall.accent(edge)).opacity(0.24) : store.mode.scuroPieno ? Night.barSel : Night.sel,
+                           ring: store.mode.scuroPieno ? Night.bar : .clear, grande: edge.libero) { open(sec) }
             }
         }
         .padding(.vertical, edge.libero ? NightRail.bordoLibero : NightRail.r * 2 + 4)
@@ -1047,6 +1107,12 @@ struct NightPanel: View {
             NightCard {
                 Text(T("Attività programmata", "Scheduled task")).font(.system(size: 11.5)).foregroundStyle(Night.t2)
                 Text(n).font(.system(size: 13.5)).foregroundStyle(Color.primary.opacity(0.92))
+            }
+        }
+        if let c = s.context {
+            NightCard {
+                Text(T("Contesto", "Context")).font(.system(size: 11.5)).foregroundStyle(Night.t2)
+                ContextCells(context: c)
             }
         }
         if s.status == "working" && !s.viva {
@@ -1626,7 +1692,7 @@ final class AgentModule {
         it.colors = { [weak self] in
             guard let self else { return (.black, .black) }
             if self.store.mode == .sfondo { let v = WallpaperTint.shared.info(self.tabItem.look).veil; return (v, v) }
-            return self.store.mode == .notte ? (NSColor(Night.barTop), NSColor(Night.bar)) : GhieraColors.goo
+            return self.store.mode.scuroPieno ? (NSColor(Night.barTop), NSColor(Night.bar)) : GhieraColors.goo
         }
         EdgeDock.shared.register(it, window: win)
     }
@@ -1733,10 +1799,11 @@ final class AgentModule {
         // la colonna che esce dal bordo e rientra ora la segue EdgeDock (bordi.swift), dovunque sia
     }
 
-    /// ⌃⌥L: passa fra Dark Matte e White Matte (con sfondo, cartelle, macOS e Spazio: Temi.scegli).
+    /// ⌃⌥L: Dark Matte → White Matte → Carbone → Dark Matte (con sfondo, cartelle, macOS e Spazio: Temi.scegli).
     func cycleMode() {
         guard !RegistroModuli.shared.bloccato("temi") else { LicenzaViva.shared.chiedi(); return }   // senza Complete ⌃⌥L apre la licenza
-        Temi.scegli(mode == .bianco ? .darkMatte : .whiteMatte) { [weak self] in self?.mode = $0 }
+        let prossimo: PulsarTema = mode == .bianco ? .carbone : mode == .carbone ? .darkMatte : .whiteMatte
+        Temi.scegli(prossimo) { [weak self] in self?.mode = $0 }
     }
 
     func setPanel(_ open: Bool) {

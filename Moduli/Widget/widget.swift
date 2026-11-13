@@ -474,6 +474,8 @@ final class CalendarModel: ObservableObject {
     /// il primo evento con orario la cui finestra non è ancora chiusa (Riunione.scegli), cercato da un'ora fa a 24 ore da ora.
     @Published private(set) var prossimaRiunione: Next?
     @Published private(set) var denied = false
+    /// 31/10: tutti gli eventi di oggi, dalla mezzanotte, per la scheda Oggi dell'isola (isola-oggi.swift).
+    @Published private(set) var oggi: [Next] = []
     @Published private(set) var demoDate: Date?       // reel: lo stesso giorno della barra finta
     private let store = EKEventStore()
     private var observing = false
@@ -525,6 +527,14 @@ final class CalendarModel: ObservableObject {
         let pick = timed.first ?? events.first
         let nuovo = pick.map(Self.voce)
         if nuovo != next { next = nuovo }
+
+        // 31/10: la giornata intera per la scheda Oggi: prima quelli di tutto il giorno, poi per orario; niente annullati
+        let inizio = cal.startOfDay(for: now)
+        let giorno = store.events(matching: store.predicateForEvents(withStart: inizio, end: endOfDay, calendars: nil))
+            .filter { $0.status != .canceled }
+            .sorted { ($0.isAllDay ? 0 : 1, $0.startDate) < ($1.isAllDay ? 0 : 1, $1.startDate) }
+            .map(Self.voce)
+        if giorno != oggi { oggi = giorno }
 
         // fase 4: la prossima riunione, nelle prossime 24 ore (una iniziata da poco c'è ancora)
         let ampie = store.events(matching: store.predicateForEvents(withStart: now.addingTimeInterval(-3600), end: now.addingTimeInterval(24 * 3600), calendars: nil))

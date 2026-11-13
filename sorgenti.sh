@@ -6,12 +6,15 @@ CORE=(Core/Impostazioni.swift Core/Persona.swift Core/Cartelle.swift Core/Licenz
   Core/PermessiPannelli.swift Core/Permessi.swift Core/CollegaClaude.swift Core/Scorciatoie.swift Core/BenvenutoLogica.swift Core/Riunione.swift)
 
 MODULI=(
-  Moduli/Lite/main.swift Moduli/Agent/agente.swift Moduli/Agent/agente-linea.swift Moduli/Agent/agente-finestra.swift
-  Moduli/Isola/isola-nuova.swift Moduli/Isola/isola-email.swift Moduli/Media/musica-viva.swift Moduli/Mixer/ghiera.swift
+  Moduli/Lite/main.swift Moduli/Agent/agente.swift Moduli/Agent/agente-linea.swift Moduli/Agent/agente-socket.swift Moduli/Agent/telefono-ponte.swift Moduli/Lite/Impostazioni/PaginaTelefono.swift Moduli/Agent/agente-finestra.swift
+  Moduli/Isola/isola-nuova.swift Moduli/Isola/isola-oggi.swift Moduli/Isola/isola-promemoria.swift Moduli/Isola/isola-email.swift Moduli/Media/musica-viva.swift Moduli/Mixer/ghiera.swift
   Moduli/Isola/isola-logica.swift Moduli/Isola/isola.swift Moduli/Media/media.swift Moduli/Widget/widget.swift Moduli/Media/browser.swift
-  Moduli/Media/miniatura.swift Moduli/Isola/isola-agente.swift Moduli/Isola/isola-sistema.swift Moduli/Isola/riunione-isola.swift Moduli/Widget/widget-extra.swift Moduli/Griglia/griglia.swift
+  Moduli/Media/miniatura.swift Moduli/Isola/isola-agente.swift Moduli/Isola/isola-sistema.swift Moduli/Isola/isola-cuffie.swift Moduli/Isola/riunione-isola.swift Moduli/Widget/widget-extra.swift Moduli/Griglia/griglia.swift
   Moduli/Temi/temi.swift Moduli/Temi/temi-scrivania-logica.swift Moduli/Temi/temi-scrivania.swift Moduli/Anima/anima.swift Moduli/Anima/anima-cose.swift Moduli/Anima/anima-stella.swift Moduli/Widget/widget-hitodama.swift
-  Moduli/Lite/nothing.swift Moduli/Lite/barra-guardia.swift Moduli/Media/musica-led.swift Moduli/Widget/widget-braun.swift
+  Moduli/Input/input-logica.swift Moduli/Input/input.swift Moduli/Lite/Impostazioni/PaginaInput.swift
+  Moduli/Sistema/sistema-logica.swift Moduli/Sistema/sistema.swift Moduli/Sistema/manutenzione.swift Moduli/Lite/Impostazioni/PaginaSistema.swift
+  Moduli/Utilita/utilita-logica.swift Moduli/Utilita/utilita.swift Moduli/Lite/Impostazioni/PaginaUtilita.swift
+  Moduli/Lite/nothing.swift Moduli/Lite/pannello-barra.swift Moduli/Lite/avvio.swift Moduli/Lite/barra-guardia.swift Moduli/Media/musica-led.swift Moduli/Widget/widget-braun.swift
   Moduli/Lite/Impostazioni/MattoniImpostazioni.swift Moduli/Lite/Impostazioni/FinestraImpostazioni.swift Moduli/Lite/Impostazioni/PaginaGenerale.swift
   Moduli/Lite/Impostazioni/PaginaPermessi.swift Moduli/Lite/Impostazioni/PaginaLicenza.swift Moduli/Lite/Impostazioni/PaginaScorciatoie.swift
   Moduli/Lite/Impostazioni/PaginaInfo.swift Moduli/Lite/Impostazioni/PaginaBarra.swift Moduli/Lite/Impostazioni/PaginaSuoni.swift
@@ -24,11 +27,17 @@ MODULI=(
   Moduli/Lite/Impostazioni/PaginaMuta.swift Moduli/Lite/Impostazioni/PaginaRowline.swift
   # Lanciatori (24/10, nella Lite): la lista si cambia dalla pagina delle Impostazioni; nella build dell'autore la dà Spazio (Personale/lanciatori-personale.swift)
   Moduli/Lanciatori/lanciatori-lista.swift Moduli/Lanciatori/lanciatori.swift Moduli/Lite/Impostazioni/PaginaLanciatori.swift
+  # Promesse (01/11, da Kier): cosa hai promesso o ti hanno chiesto su WhatsApp e Mail, nel notch
+  Moduli/Promesse/promesse-logica.swift Moduli/Promesse/promesse-fonti.swift Moduli/Promesse/promesse.swift
+  # Bordi del trackpad (06/11, da EdgeBar): un dito sul bordo regola volume, luce o tracce
+  Moduli/Trackpad/trackpad-logica.swift Moduli/Trackpad/trackpad.swift Moduli/Lite/Impostazioni/PaginaTrackpad.swift
+  # Terminale del notch e barra di sviluppo (07/11, da ZincWolf): SwiftTerm in Vendor/SwiftTerm
+  Moduli/Terminale/terminale.swift Moduli/Sviluppo/sviluppo-logica.swift Moduli/Sviluppo/sviluppo.swift Moduli/Lite/Impostazioni/PaginaSviluppo.swift
 )
 
 
 # Librerie esterne (solo libwebp, per il Convertitore: Vendor/libwebp/LEGGIMI.md). Vanno passate a ogni swiftc che compila MODULI.
-LIBRERIE=(-I Vendor/libwebp/include -L Vendor/libwebp/lib)
+LIBRERIE=(-I Vendor/libwebp/include -L Vendor/libwebp/lib -framework IOBluetooth -I Vendor/SwiftTerm/lib -L Vendor/SwiftTerm/lib -lSwiftTerm)   # 07/11: SwiftTerm (Vendor/SwiftTerm/LEGGIMI.md)
 
 # 19/10: Rowline (le finestre in fila) dentro Complete. I suoi file si compilano a parte come libreria RowlineKit,
 # così i loro nomi non si scontrano con quelli di Pulsar. Uso: kit_rowline <cartella> [flag di swiftc...],

@@ -24,14 +24,20 @@ final class AgentIslandSource: ObservableObject, IslandSource {
         guard let s = session, s.status == "done" else { return false }
         return Date().timeIntervalSince1970 - s.finished < 6
     }
-    var alert: Bool { pending || recentlyDone }
+    /// 01/11, l'autore: "non voglio rispondere, ma non posso diminuire il notch". Un clic fuori mette da parte la domanda
+    /// o il permesso di adesso: l'isola torna compatta (il razzo resta in attesa) e si riapre al passaggio del mouse.
+    /// Una domanda nuova ha un id nuovo e si riapre da sola.
+    var pendingKey: String? { store.question?.id ?? session?.pending?.id }
+    private(set) var setAside: String?
+    func mettiDaParte() { if let k = pendingKey { setAside = k; onChange?() } }
+    var alert: Bool { (pending && pendingKey != setAside) || recentlyDone }
     var priority: Int { pending ? 90 : recentlyDone ? 70 : 60 }
     var isActive: Bool {
         guard let s = session else { return false }
         return s.status == "working" || s.status == "waiting" || recentlyDone
     }
     /// Avviso (permesso, fine lavoro): vista tutta sua. Altrimenti si vede la casa con le tessere.
-    var usesHome: Bool { !alert }
+    var usesHome: Bool { !(pending || recentlyDone) }   // 01/11: messa da parte, la domanda torna col passaggio del mouse
     var pulseState: NotchPulse.Phase { pending ? .waiting : recentlyDone ? .done : .working }
     /// Altezza della vista aperta: la domanda ne chiede di più, la fine lavoro coi file un po' di più.
     /// Altezza della tessera (17/10, pannello nuovo): la domanda ne chiede di più se ha le descrizioni lunghe.

@@ -24,13 +24,21 @@ struct PaginaAspetto: View {
                     GruppoImpostazioni(T("Tema  ⌃⌥L", "Theme  ⌃⌥L")) {
                         // come nel menu: uno dei due è scelto solo se l'aspetto di Pulsar è un Matte
                         RigaScelta(T("Tema", "Theme"), opzioni: PulsarTema.allCases.map { (id: $0.rawValue, titolo: $0.title) },
-                                   valore: { foto ? (m.chiaro ? PulsarTema.whiteMatte : PulsarTema.darkMatte).rawValue : Self.temaScelto() }) { raw in
+                                   valore: { foto ? (m.chiaro ? PulsarTema.whiteMatte : m.carbone ? PulsarTema.carbone : PulsarTema.darkMatte).rawValue : Self.temaScelto() }) { raw in
                             if let t = PulsarTema(rawValue: raw) { FinestraImpostazioni.shared.scegliTema(t) }
                         }
                         // fase 5: il cliente sceglie se il tema cambia anche macOS (di serie sì, come prima)
                         RigaInterruttore(T("Cambia anche macOS", "Also switch macOS"),
                                          sotto: T("Scuro o chiaro insieme al tema", "Dark or light along with the theme"),
                                          valore: { temaCambiaMacOS(Impostazioni.object(.temiCambiaMacOS)) }) { Impostazioni.set($0, .temiCambiaMacOS) }
+                        // 12/11: il vetro sul pannello della barra e su quello di Claude, spento di serie
+                        RigaInterruttore(T("Effetto vetro", "Glass effect"),
+                                         sotto: T("Pannelli un po' trasparenti", "Slightly see-through panels"),
+                                         valore: { foto ? false : Impostazioni.bool(.vetroPannelli) }) { Impostazioni.set($0, .vetroPannelli) }
+                        // 13/11: il notch che saluta all'avvio (Moduli/Lite/avvio.swift), acceso di serie
+                        RigaInterruttore(T("Saluto all'avvio", "Hello on launch"),
+                                         sotto: T("Il notch si apre e il razzo decolla", "The notch opens and the rocket takes off"),
+                                         valore: { foto ? true : SalutoAvvio.acceso }) { SalutoAvvio.acceso = $0 }
                     }
                     if Self.mostraScrivania(foto: foto) {
                         // 25/10: sfondo e cartelle per chi compra (Moduli/Temi/temi-scrivania.swift), spento di serie
@@ -51,7 +59,7 @@ struct PaginaAspetto: View {
                         }
                     }
                     GruppoImpostazioni(T("Altri aspetti di Pulsar", "Other Pulsar looks")) {
-                        ForEach(AgentMode.allCases.filter { $0 != .notte && $0 != .bianco }, id: \.self) { a in
+                        ForEach(AgentMode.allCases.filter { !$0.pieno }, id: \.self) { a in
                             if modo == a {
                                 RigaValore(a.title, valore: T("In uso", "In use"))
                             } else {
@@ -86,6 +94,6 @@ struct PaginaAspetto: View {
     /// Il tema da segnare, come la spunta del menu: quello salvato se Pulsar è in Dark o White Matte, nessuno in Sfondo.
     private static func temaScelto() -> String {
         let modo = GhieraLook.shared.mode
-        return modo == .notte || modo == .bianco ? PulsarTema.attuale.rawValue : ""
+        return modo.pieno ? PulsarTema.attuale.rawValue : ""
     }
 }

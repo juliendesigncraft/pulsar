@@ -28,6 +28,12 @@
 	<string>Pulsar turns what you say into text while you hold the voice keys, on your Mac when possible.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Pulsar turns Bluetooth on and off from the Controls tile in the notch island.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Only if you turn on the iPhone switch: Pulsar tells your iPhone, on your home network, what Claude Code is doing, and takes its answers to permission requests. Nothing leaves your network.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_pulsarpocket._tcp</string>
+	</array>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>

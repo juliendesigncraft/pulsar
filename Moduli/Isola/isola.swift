@@ -8,6 +8,9 @@ import AppKit
 /// La finestra è più larga e più alta della forma di `shadowPad`, altrimenti l'ombra verrebbe tagliata.
 enum IslandMetrics {
     static let shadowPad: CGFloat = 22
+    /// Dove sta l'isola visibile sullo schermo (nil quando c'è solo il notch). La legge la lingua dei bordi del trackpad
+    /// per mettersi sotto, larga uguale (l'autore, 07/11). Solo dal thread principale.
+    static var visibile: NSRect?
     static let shadow = Color(red: 0.115, green: 0.123, blue: 0.160).opacity(0.10)   // il dark matte di Night.rail
 }
 
@@ -149,6 +152,9 @@ struct IslandView: View {
     @ObservedObject var look = GhieraLook.shared    // cambio aspetto: l'isola si ridisegna subito
     var tap: () -> Void
 
+    private var isolaAperta: Bool { model.state == .expanded || model.state == .alert }
+    private var formaIsola: NotchShape { NotchShape(bottom: isolaAperta ? 28 : model.state == .peek ? 14 : 10) }
+
     var body: some View {
         ZStack(alignment: .top) {
             switch model.state {
@@ -181,18 +187,22 @@ struct IslandView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        // 09/11, l'autore: riducendo il notch si vedeva un rettangolo velato ad angoli vivi. I due fondi si scambiavano in
+        // dissolvenza mentre la finestra si stringeva, e il contenuto che svaniva veniva tagliato dai bordi della finestra.
+        // Ora il fondo è una sagoma sola sempre piena, il suo raggio si anima, e il contenuto sta dentro la stessa sagoma.
+        .clipShape(formaIsola)
         .background {
-            if model.state == .compact || model.state == .rest || model.state == .peek {
+            ZStack {
                 // compatta e comparsa: nere negli aspetti scuri (continuano il notch vero), chiare in White Matte
                 // e negli aspetti chiari (l'autore, 12/10: "il notch deve diventare chiaro in White Matte")
                 Group {
-                    if Theme.light { Color.clear.modifier(ThemeSurface(mode: look.mode, shape: NotchShape(bottom: model.state == .peek ? 14 : 10))) }
-                    else { NotchShape(bottom: model.state == .peek ? 14 : 10).fill(Color.black) }
+                    if Theme.light { Color.clear.modifier(ThemeSurface(mode: look.mode, shape: formaIsola)) }
+                    else { formaIsola.fill(Color.black) }
                 }
-                    .shadow(color: Ombra.colore, radius: Ombra.raggio, x: 0, y: Ombra.basso)   // 12/10: l'ombra minima del tema (temi.swift)
-            } else {
+                .shadow(color: isolaAperta ? .clear : Ombra.colore, radius: Ombra.raggio, x: 0, y: Ombra.basso)   // 12/10: l'ombra minima del tema (temi.swift)
                 // 17/10: collo nel notch, pannello sotto la barra dei menu; ai lati del collo la barra resta libera
                 IslandShellFill(neckWidth: model.notchWidth, neckHeight: model.notchHeight)
+                    .opacity(isolaAperta ? 1 : 0)
             }
         }
         .contentShape(Rectangle())
@@ -338,6 +348,8 @@ final class IslandModule {
     private let prova = ProvaSource()
     private let media = MediaSource()
     private let browser = BrowserMediaSource()
+    private let promemoria = PromemoriaSource()     // 31/10: i promemoria delle attività (isola-promemoria.swift)
+    private let promesse = PromesseSource()         // 01/11: le promesse di WhatsApp e Mail (Moduli/Promesse)
     private let riunione = RiunioneSource()         // fase 4: la prossima riunione (riunione-isola.swift)
     private var dwellWork: DispatchWorkItem?
     private var forced: IslandState?
@@ -405,7 +417,7 @@ final class IslandModule {
         model.home = media
         model.widgets = [MusicWidget(media: media), WeatherWidget(), CalendarWidget(), TimerWidget(dial: dialStore),
                          YouTubeWidget(browser: browser), WindowWidget(), MessagesWidget(), ClipboardWidget(), TrayWidget(),
-                         RecentsWidget(), MacWidget(), TodoWidget(),
+                         RecentsWidget(), MacWidget(), TodoWidget(), PromesseWidget(),
                          ControlsWidget(model: model), PowerWidget(), StatsWidget()]
         model.widgets += [ClockWidget(), MonthWidget(), SunWidget()]   // 14/10: da LaunchMe, forme Braun (widget-braun.swift)
         model.widgets.append(LanciatoriWidget()) // 24/10: i Lanciatori, nella Lite dal 24/10 sera (Moduli/Lanciatori)
@@ -466,6 +478,14 @@ final class IslandModule {
         riunione.chiudi = { [weak self] in self?.chiudi() }      // Entra e Apri nel Calendario chiudono l'isola
         sources.append(riunione)
         riunione.start()
+        promemoria.onChange = { [weak self] in self?.layout(animated: true) }     // 31/10: isola-promemoria.swift
+        promemoria.chiudi = { [weak self] in self?.chiudi() }
+        sources.append(promemoria)
+        promemoria.start()
+        promesse.onChange = { [weak self] in self?.layout(animated: true) }
+        promesse.chiudi = { [weak self] in self?.chiudi() }
+        sources.append(promesse)
+        promesse.start()
         let move: (NSEvent) -> Void = { [weak self] _ in self?.mouseMoved() }
         if let g = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged], handler: move) { monitors.append(g) }
         if let l = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved, handler: { move($0); return $0 }) { monitors.append(l) }
@@ -515,12 +535,15 @@ final class IslandModule {
         media.stop()
         browser.stop()
         riunione.stop()
+        promemoria.stop()
+        promesse.stop()
+        Promesse.shared.stop()
         watch.stop()
         PeekCenter.shared.onChange = nil
         ClipboardHistory.shared.stop()
         RecentApps.shared.stop()
         tilesWatch = nil
-        sources.removeAll { $0 === media || $0 === browser || $0 === agentSource || $0 === animaSource || $0 === riunione || $0 is AmbientSource }
+        sources.removeAll { $0 === media || $0 === browser || $0 === agentSource || $0 === animaSource || $0 === riunione || $0 === promemoria || $0 === promesse || $0 is AmbientSource }
         agentSource = nil
         animaSource = nil
         NotificationCenter.default.removeObserver(self)
@@ -619,7 +642,16 @@ final class IslandModule {
     }
 
     private func clickOutside() {
-        guard pinnedOpen || model.tiles.editing, let f = win?.frame, !contentFrame(f).contains(NSEvent.mouseLocation) else { return }
+        // 01/11: una domanda o un permesso di Claude aperti da soli si mettono da parte con un clic fuori (isola-agente.swift)
+        if agentSource?.alert == true, agentSource?.pending == true, let f = win?.frame, !contentFrame(f).contains(NSEvent.mouseLocation) {
+            agentSource?.mettiDaParte()
+            hover = false
+        }
+        // 01/11: anche lo stato forzato dalle prove (pulsar://isola?stato=) cede a un clic vero fuori: prima l'isola restava aperta
+        guard pinnedOpen || model.tiles.editing || forced != nil, let f = win?.frame, !contentFrame(f).contains(NSEvent.mouseLocation) else {
+            layout(animated: true); return
+        }
+        forced = nil
         pinnedOpen = false
         model.tiles.editing = false
         layout(animated: true)
@@ -641,7 +673,8 @@ final class IslandModule {
         let peekItem = PeekCenter.shared.current
         let scrive = model.email != nil
         let dropping = model.dropHover || model.dropNote != nil || scrive
-        win.testo = scrive
+        // 31/10: nella scheda Oggi si scrive (attività e nota): la finestra accetta la tastiera solo quando si clicca un campo
+        win.testo = scrive || model.tab == .oggi
         if scrive && !win.isKeyWindow { DispatchQueue.main.async { win.makeKey() } }
         if model.dropHover != catcherRaised { placeCatcher() }
         let state = dropping ? .alert : forced ?? IslandLogic.state(hover: hover, pinnedOpen: pinnedOpen || model.tiles.editing, alert: alert,
@@ -669,11 +702,12 @@ final class IslandModule {
 
         let sf = screen.frame
         let wing: CGFloat = 46
+        let schedaLarga = model.tab == .oggi
         let w: CGFloat, h: CGFloat
         switch state {
         case .rest:     w = notch.width + 20;                h = notch.height
         case .compact:  w = notch.width + 2 * wing + 20;     h = notch.height
-        case .peek:     w = peekItem.map { PeekView.width($0, notch: notch.width) } ?? notch.width + 20; h = notch.height + 28
+        case .peek:     w = peekItem.map { PeekView.width($0, notch: notch.width) } ?? notch.width + 20; h = notch.height + (peekItem?.kind == "cuffie" ? CuffiePeek.altezza + 4 : 28)
         case .expanded, .alert:
             // 17/10 sera: pannello attaccato al bordo alto, testa nella fascia del notch: notch + 8 + tessera + 10
             if scrive { w = 600; h = notch.height + 8 + EmailCard.altezza + 10 }
@@ -682,6 +716,8 @@ final class IslandModule {
                 if let a = s as? AgentIslandSource { w = 680; h = notch.height + 8 + a.height + 10 }
                 else if let ps = s.panelSize { w = ps.width; h = notch.height + 8 + ps.height + 10 }   // 25/10: misurata sul contenuto
                 else { w = 600; h = notch.height + 8 + 150 }
+            } else if schedaLarga {
+                w = min(OggiMetrics.larghezza, sf.width - 40); h = notch.height + 8 + OggiMetrics.altezza + 10
             } else if model.tab == .tessere {
                 // più bassa della Casa (l'autore, 17/10); il cambio di scheda ridisegna subito, quindi niente più icone coperte
                 w = min(max(700, model.tiles.layout.width(cell: TileMetrics.cell, gap: TileMetrics.gap) + 40), sf.width - 40)
@@ -689,10 +725,12 @@ final class IslandModule {
             } else {
                 // 24/10: a freddo (né Claude né musica che suona) un riquadro solo, un pelo più stretto
                 let freddo = model.anteprimaFredda || ((agentSource?.isActive != true) && ((model.home as? MediaSource)?.track?.playing != true))
-                w = freddo ? 580 : 700; h = notch.height + 8 + 128 + 10
+                w = freddo ? 580 : 620; h = notch.height + 8 + 128 + 10   // 31/10: senza il secondo riquadro, un pelo più larga del freddo
             }
         }
         model.width = w
+        // il corpo, senza le due spalle da 10 punti in alto (NotchShape): i fianchi della lingua stanno in colonna con questi
+        IslandMetrics.visibile = state != .rest ? NSRect(x: sf.midX - w / 2 + 10, y: sf.maxY - h, width: w - 20, height: h) : nil
         let pad = IslandMetrics.shadowPad
         let frame = NSRect(x: sf.midX - w / 2 - pad, y: sf.maxY - h - pad, width: w + 2 * pad, height: h + pad)
         let show = state != .rest
