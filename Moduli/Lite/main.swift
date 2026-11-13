@@ -826,8 +826,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Rapidi: i tasti rapidi di prima, poi gli altri interruttori (senza doppioni), poi le azioni
         var rapidi: [VocePannello] = [
             rapido(QuickTile(symbol: "wand.and.stars", title: T("Barra pulita", "Clean bar"), on: barCollapsed, act: { [weak self] in self?.toggleBar() }), interruttore: true),
-            rapido(QuickTile(symbol: PulsarTema.attuale.chiaro ? "sun.max" : "moon", title: T("Tema: ", "Theme: ") + PulsarTema.attuale.title, on: false,
-                             act: { [weak self] in self?.bloccatoOppure("temi") { self?.agent.cycleMode() } }), interruttore: false),
+            // 13/11: il tema si cambia col pannello aperto, che si ritinge (prima si chiudeva)
+            VocePannello(titolo: T("Tema: ", "Theme: ") + PulsarTema.attuale.title, simbolo: PulsarTema.attuale.chiaro ? "sun.max" : "moon",
+                         immagine: nil, acceso: nil, nascosta: false, figli: [],
+                         esegui: { [weak self] in
+                             self?.bloccatoOppure("temi") { self?.agent.cycleMode() }
+                             for dopo in [0.15, 0.8] { DispatchQueue.main.asyncAfter(deadline: .now() + dopo) { pannello.ritinge() } }
+                         }),
         ]
         rapidi.append(rapido(QuickTile(symbol: "square.on.square.intersection.dashed", title: T("Effetto vetro", "Glass effect"), on: Impostazioni.bool(.vetroPannelli),
                                        act: { Impostazioni.set(!Impostazioni.bool(.vetroPannelli), .vetroPannelli); pannello.chiudi() }), interruttore: true))   // 12/11

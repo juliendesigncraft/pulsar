@@ -1,3 +1,4 @@
+import CoreAudio
 // Strumenti comuni: testi nelle due lingue, shell, AppleScript e stato di sistema (18/10/2026, riordino fase 1): spostati qui da main.swift.
 import AppKit
 import SwiftUI
@@ -40,25 +41,29 @@ enum SystemState {
         // (NSApp.effectiveAppearance) diceva "scuro" anche col Mac in chiaro: la spunta mentiva.
         Impostazioni.string(.appleInterfaceStyle) == "Dark"
     }
-    static var desktopIconsHidden: Bool {
-        let (status, out) = shell("/usr/bin/defaults", ["read", "com.apple.finder", "CreateDesktop"])
-        guard status == 0 else { return false } // chiave assente = icone visibili
-        return out == "0" || out.lowercased() == "false"
+    // 13/11: letture dirette delle preferenze (CFPreferences) e del muto (CoreAudio) al posto di `defaults` e `osascript`:
+    // il pannello della barra le chiedeva a ogni apertura e ogni processo costava decine di millisecondi (250-470 ms in tutto).
+    private static func preferenza(_ chiave: String, _ dominio: String) -> Any? {
+        CFPreferencesAppSynchronize(dominio as CFString)
+        return CFPreferencesCopyAppValue(chiave as CFString, dominio as CFString)
     }
-    static var hiddenFilesShown: Bool {
-        let (status, out) = shell("/usr/bin/defaults", ["read", "com.apple.finder", "AppleShowAllFiles"])
-        guard status == 0 else { return false }
-        return out == "1" || out.lowercased() == "true"
+    private static func vero(_ v: Any?) -> Bool? {
+        if let n = v as? NSNumber { return n.boolValue }
+        if let s = v as? String { return ["1", "true", "yes"].contains(s.lowercased()) }
+        return nil
     }
+    static var desktopIconsHidden: Bool { vero(preferenza("CreateDesktop", "com.apple.finder")).map { !$0 } ?? false }   // assente = icone visibili
+    static var hiddenFilesShown: Bool { vero(preferenza("AppleShowAllFiles", "com.apple.finder")) ?? false }
     static var muted: Bool {
-        let (_, out) = shell("/usr/bin/osascript", ["-e", "output muted of (get volume settings)"])
-        return out == "true"
+        var a = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDefaultOutputDevice, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+        var id: AudioDeviceID = 0, dim = UInt32(MemoryLayout<AudioDeviceID>.size)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &a, 0, nil, &dim, &id) == noErr, id != 0 else { return false }
+        var m = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyMute, mScope: kAudioDevicePropertyScopeOutput, mElement: kAudioObjectPropertyElementMain)
+        var v: UInt32 = 0; dim = UInt32(MemoryLayout<UInt32>.size)
+        guard AudioObjectHasProperty(id, &m), AudioObjectGetPropertyData(id, &m, 0, nil, &dim, &v) == noErr else { return false }
+        return v != 0
     }
-    static var stageManager: Bool {
-        let (status, out) = shell("/usr/bin/defaults", ["read", "com.apple.WindowManager", "GloballyEnabled"])
-        guard status == 0 else { return false }
-        return out == "1"
-    }
+    static var stageManager: Bool { vero(preferenza("GloballyEnabled", "com.apple.WindowManager")) ?? false }
 }
 
 // MARK: - Lingua (v1.9): italiano sui Mac in italiano, inglese altrove (spostato da main.swift)

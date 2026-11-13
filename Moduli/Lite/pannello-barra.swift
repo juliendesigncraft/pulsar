@@ -124,7 +124,9 @@ final class PannelloBarra: NSObject, NSPopoverDelegate {
 
     private override init() {
         super.init()
-        popover.behavior = .transient
+        // 13/11, l'autore: "quando cambio tema o schiaccio una voce, il menu si chiude". Con .transient macOS lo chiudeva
+        // a ogni cambio d'aspetto o d'app attiva. Ora lo chiude Pulsar: clic fuori dal pannello, Esc, o una voce che apre altro.
+        popover.behavior = .applicationDefined
         popover.animates = true
         popover.delegate = self
         let host = NSHostingController(rootView: VistaPannello(stato: stato))
@@ -148,9 +150,25 @@ final class PannelloBarra: NSObject, NSPopoverDelegate {
         }
         colora()
         popover.contentViewController?.view.window?.makeKey()
+        mettiGuardiani()
     }
 
     func chiudi() { popover.performClose(nil) }
+
+    private var guardiani: [Any] = []
+    /// Clic in un'altra app o in un'altra finestra di Pulsar, o Esc: si chiude. I clic dentro il pannello no.
+    private func mettiGuardiani() {
+        togliGuardiani()
+        if let g = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown], handler: { [weak self] _ in self?.chiudi() }) { guardiani.append(g) }
+        if let l = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .keyDown], handler: { [weak self] e in
+            guard let self, self.popover.isShown else { return e }
+            if e.type == .keyDown { if e.keyCode == 53 { self.chiudi(); return nil }; return e }      // Esc
+            let mio = self.popover.contentViewController?.view.window
+            if e.window !== mio && e.window !== self.ultimoBottone?.window { self.chiudi() }
+            return e
+        }) { guardiani.append(l) }
+    }
+    private func togliGuardiani() { guardiani.forEach(NSEvent.removeMonitor); guardiani = [] }
 
     private weak var ultimoBottone: NSStatusBarButton?
     /// Riapre il pannello su una scheda (dopo una finestra di scelta, come Disinstalla).
@@ -159,7 +177,14 @@ final class PannelloBarra: NSObject, NSPopoverDelegate {
         if let b = ultimoBottone, !popover.isShown { mostra(da: b) }
     }
 
-    func ricarica() { if let f = fornisci { stato.dati = f() } }
+    func ricarica() {
+        guard let f = fornisci else { return }
+        let t0 = Date()
+        stato.dati = f()
+        ultimoTempo = Date().timeIntervalSince(t0)
+    }
+    /// Quanto ci ha messo l'ultima preparazione delle schede (secondi), per le prove: pulsar://pannello?tempo=1
+    private(set) var ultimoTempo: TimeInterval = 0
 
     /// La cornice del popover (punta compresa) prende il fondo del tema: senza, macOS mette il suo vetro.
     private func colora() {
@@ -171,7 +196,14 @@ final class PannelloBarra: NSObject, NSPopoverDelegate {
         stato.vetro = vetro
     }
 
-    func popoverDidClose(_ notification: Notification) { stato.mostraSpente = false; ancora.orderOut(nil) }
+    func popoverDidClose(_ notification: Notification) { stato.mostraSpente = false; ancora.orderOut(nil); togliGuardiani() }
+
+    /// Dopo un cambio di tema: colori e cornice nuovi senza chiudere.
+    func ritinge() {
+        guard popover.isShown else { return }
+        popover.appearance = NSAppearance(named: Theme.light ? .aqua : .darkAqua)
+        colora(); ricarica()
+    }
 }
 
 // MARK: - Viste

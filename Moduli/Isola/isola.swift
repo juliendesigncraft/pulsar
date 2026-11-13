@@ -84,7 +84,9 @@ final class IslandModel: ObservableObject {
     // prima restava della misura vecchia per qualche secondo e la Casa copriva le icone in alto.
     /// 24/10: anteprima della Casa a freddo anche mentre Claude lavora (pulsar://isola?freddo=1, freddo=0 la toglie)
     @Published var anteprimaFredda = false { didSet { if anteprimaFredda != oldValue { DispatchQueue.main.async { self.dropChanged?() } } } }
-    @Published var tab: IslandTab = .casa { didSet { if tab != oldValue { DispatchQueue.main.async { self.dropChanged?() } } } }
+    @Published var tab: IslandTab = .casa { didSet { if tab != oldValue { schedaCambiata?(); DispatchQueue.main.async { self.dropChanged?() } } } }
+    /// 13/11: chiamata prima che la forma cambi misura per una scheda nuova (IslandModule tiene la misura di prima).
+    var schedaCambiata: (() -> Void)?
     weak var agent: AgentStore?
     @Published var dropHover = false
     @Published var dropNote: DropNote?
@@ -358,6 +360,9 @@ final class IslandModule {
     private var hoverWork: DispatchWorkItem?
     private var monitors: [Any] = []
     private var shown = false
+    /// 13/11, l'autore: "quando apro il terzo menu e torno su Home si chiude, perché la Home è più stretta e il mouse resta
+    /// fuori". Al cambio di scheda si tiene la sagoma di prima: finché il mouse resta lì dentro, l'isola resta aperta.
+    private var sagomaTenuta: NSRect?
 
     var enabled: Bool {
         get { Impostazioni.object(.isolaEnabled) as? Bool ?? true }
@@ -456,6 +461,10 @@ final class IslandModule {
         sources.append(browser)
         browser.start()
         if model.dropChanged == nil { model.dropChanged = { [weak self] in self?.layout(animated: true) } }
+        model.schedaCambiata = { [weak self] in
+            guard let self, let f = self.win?.frame else { return }
+            self.sagomaTenuta = self.sagomaTenuta.map { $0.union(f) } ?? f
+        }
         if let st = agentStore {
             IslandDrop.store = st
             model.agent = st
@@ -602,7 +611,10 @@ final class IslandModule {
             if model.dropHover { model.setDropHover(false) }
         }
         var inside = wakeZone.contains(p)
-        if shown, let f = win?.frame, contentFrame(f).insetBy(dx: -6, dy: -6).contains(p) { inside = true }
+        if shown, let f = win?.frame, contentFrame(f).insetBy(dx: -6, dy: -6).contains(p) { inside = true; sagomaTenuta = nil }
+        if !inside, let t = sagomaTenuta {
+            if shown, contentFrame(t).insetBy(dx: -6, dy: -6).contains(p) { inside = true } else { sagomaTenuta = nil }
+        }
         if inside {
             hoverWork?.cancel(); hoverWork = nil
             if !hover && dwellWork == nil {
