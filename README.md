@@ -45,6 +45,7 @@ I built Pulsar with Claude. I designed every part, Claude wrote the Swift with m
 - Voice: hold ⌃⌥ to dictate, ⌃⌘ to give a command, ⌃⇧ to circle something and ask
 - Three themes: Dark Matte, White Matte and Carbone (near black, with your macOS accent color), for Pulsar and,
   if you want, macOS, the wallpaper and the folders you pick; an optional glass effect on the panels
+- A Minimal notch you can switch to any time: small icons, one row of four tiles (music, weather, next event, timer) and the lyrics
 - A short hello in the notch when Pulsar starts (you can turn it off)
 
 Every extra stays off until you turn it on, at first launch or later from the menu bar.

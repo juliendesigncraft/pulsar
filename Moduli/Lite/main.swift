@@ -836,6 +836,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ]
         rapidi.append(rapido(QuickTile(symbol: "square.on.square.intersection.dashed", title: T("Effetto vetro", "Glass effect"), on: Impostazioni.bool(.vetroPannelli),
                                        act: { Impostazioni.set(!Impostazioni.bool(.vetroPannelli), .vetroPannelli); pannello.chiudi() }), interruttore: true))   // 12/11
+        rapidi.append(rapido(QuickTile(symbol: "capsule", title: T("Notch minimal", "Minimal notch"), on: NotchMinimal.shared.acceso,
+                                       act: { NotchMinimal.shared.acceso.toggle() }), interruttore: true))   // 13/11
         var titoli = Set(rapidi.map(\.titolo))
         var azioni: [VocePannello] = []
         for (t, items) in sezioni where inizia(t, ["INTERRUTTORI", "SWITCHES"]) {

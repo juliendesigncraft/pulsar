@@ -7,7 +7,7 @@ CORE=(Core/Impostazioni.swift Core/Persona.swift Core/Cartelle.swift Core/Licenz
 
 MODULI=(
   Moduli/Lite/main.swift Moduli/Agent/agente.swift Moduli/Agent/agente-linea.swift Moduli/Agent/agente-socket.swift Moduli/Agent/telefono-ponte.swift Moduli/Lite/Impostazioni/PaginaTelefono.swift Moduli/Agent/agente-finestra.swift
-  Moduli/Isola/isola-nuova.swift Moduli/Isola/isola-oggi.swift Moduli/Isola/isola-promemoria.swift Moduli/Isola/isola-email.swift Moduli/Media/musica-viva.swift Moduli/Mixer/ghiera.swift
+  Moduli/Isola/isola-nuova.swift Moduli/Isola/isola-minimal.swift Moduli/Isola/isola-oggi.swift Moduli/Isola/isola-promemoria.swift Moduli/Isola/isola-email.swift Moduli/Media/musica-viva.swift Moduli/Mixer/ghiera.swift
   Moduli/Isola/isola-logica.swift Moduli/Isola/isola.swift Moduli/Media/media.swift Moduli/Widget/widget.swift Moduli/Media/browser.swift
   Moduli/Media/miniatura.swift Moduli/Isola/isola-agente.swift Moduli/Isola/isola-sistema.swift Moduli/Isola/isola-cuffie.swift Moduli/Isola/riunione-isola.swift Moduli/Widget/widget-extra.swift Moduli/Griglia/griglia.swift
   Moduli/Temi/temi.swift Moduli/Temi/temi-scrivania-logica.swift Moduli/Temi/temi-scrivania.swift Moduli/Anima/anima.swift Moduli/Anima/anima-cose.swift Moduli/Anima/anima-stella.swift Moduli/Widget/widget-hitodama.swift

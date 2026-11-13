@@ -298,6 +298,7 @@ struct SessionRockets: View {
 /// Cosa c'è sotto la barra dei menu: la testa (tranne nel trascinamento) e una tessera sola per volta.
 struct IslandPanelContent: View {
     @ObservedObject var model: IslandModel
+    @ObservedObject private var minimal = NotchMinimal.shared     // 13/11: il notch Minimal
     var body: some View {
         VStack(spacing: 0) {
             if let e = model.email {
@@ -314,11 +315,15 @@ struct IslandPanelContent: View {
                     DropCard(model: model).padding(.horizontal, 20).padding(.bottom, 10)
                 }
             } else {
-                IslandHead(model: model, status: status)          // nella fascia ai lati del notch
+                if minimal.acceso { MinimalHead(model: model) } else {
+                    IslandHead(model: model, status: status)          // nella fascia ai lati del notch
+                }
                 Spacer().frame(height: 8)
                 Group {
                     if let s = model.source, !s.usesHome {
                         s.expandedView()
+                    } else if minimal.acceso {
+                        MinimalHome(model: model)
                     } else if model.tab == .tessere {
                         TileRow(tiles: model.tiles, widgets: model.widgets)
                     } else if model.tab == .oggi {

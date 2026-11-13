@@ -103,6 +103,7 @@ enum Chiave: String, CaseIterable {
     case temiCambiaMacOS      // fase 5: il tema cambia anche l'aspetto di macOS (acceso se mancante)
     case utilitaAcceso        // 13/11: il modulo Utilità (Moduli/Utilita), spento di serie
     case utilChiudiEsci, utilTagliaIncolla, utilTestoSemplice, utilPulisciLink, utilBloccaMusica   // 13/11: le sue funzioni, spente
+    case isolaMinimal         // 13/11: il notch Minimal (Moduli/Isola/isola-minimal.swift), spento se mancante
     case inputAcceso          // 13/11: Mouse e tastiera (Moduli/Input), spento di serie
     case inSnippet, inSuperTasto, inClicCentrale, inRimbalzo, inTastiLaterali, inScorrimento, inFuoco   // 13/11: le sue funzioni, spente
     case sistemaAcceso        // 13/11: Sistema, Rete e Manutenzione nel pannello (Moduli/Sistema), spento di serie

@@ -35,6 +35,9 @@ struct PaginaAspetto: View {
                         RigaInterruttore(T("Effetto vetro", "Glass effect"),
                                          sotto: T("Pannelli un po' trasparenti", "Slightly see-through panels"),
                                          valore: { foto ? false : Impostazioni.bool(.vetroPannelli) }) { Impostazioni.set($0, .vetroPannelli) }
+                        // 13/11: il notch Minimal, come nel reel del 12/10
+                        RigaScelta(T("Notch", "Notch"), opzioni: [(id: "completo", titolo: T("Completo", "Full")), (id: "minimal", titolo: "Minimal")],
+                                   valore: { NotchMinimal.shared.acceso && !foto ? "minimal" : "completo" }) { NotchMinimal.shared.acceso = $0 == "minimal" }
                         // 13/11: il notch che saluta all'avvio (Moduli/Lite/avvio.swift), acceso di serie
                         RigaInterruttore(T("Saluto all'avvio", "Hello on launch"),
                                          sotto: T("Il notch si apre e il razzo decolla", "The notch opens and the rocket takes off"),
