@@ -978,6 +978,8 @@ struct NightPanel: View {
     @State private var draft = ""
     /// Nelle foto (FotoImpostazioni, foto di vendita) niente ScrollView né campo di testo: ImageRenderer non li disegna.
     @Environment(\.fotoImpostazioni) private var foto
+    /// 13/11, l'autore: "non solo il notch, anche il menu a destra di Claude" diventa minimal (NotchMinimal).
+    @ObservedObject private var minimal = NotchMinimal.shared
     private let shape = RoundedRectangle(cornerRadius: 28, style: .circular)
 
     private var sezione: some View {
@@ -1025,7 +1027,23 @@ struct NightPanel: View {
 
     // MARK: in alto: indietro, spunta e altro, avanti; a destra orologio e chiudi
 
-    private var toolbar: some View {
+    @ViewBuilder private var toolbar: some View {
+        if minimal.acceso { toolbarMinimal } else { toolbarCompleta }
+    }
+
+    /// Minimal: le frecce solo con più sessioni, poi chiudi. Consenti e Nega stanno nella card del permesso.
+    private var toolbarMinimal: some View {
+        HStack(spacing: 6) {
+            if store.sessions.count > 1 {
+                RoundIcon(symbol: "chevron.left", help: "Previous session") { store.stepSession(-1) }
+                RoundIcon(symbol: "chevron.right", help: "Next session") { store.stepSession(1) }
+            }
+            Spacer()
+            RoundIcon(symbol: "xmark", help: "Close (⌃⌥P)", action: close)
+        }
+    }
+
+    private var toolbarCompleta: some View {
         let many = store.sessions.count > 1
         let pending = store.current?.pending != nil || store.hasPending
         return HStack(spacing: 6) {
@@ -1080,7 +1098,7 @@ struct NightPanel: View {
 
     @ViewBuilder private func sectionView(_ s: AgentSession) -> some View {
         switch store.section {
-        case .work: work(s)
+        case .work: if minimal.acceso { workMinimal(s) } else { work(s) }
         case .files: files(s)
         case .approve: approve(s)
         case .sessions: sessionsList
@@ -1160,6 +1178,42 @@ struct NightPanel: View {
             }
         }
         staleNote(s)
+    }
+
+    /// Minimal: niente card né pillole delle sessioni. Nome e stato, il permesso se c'è, poi righe di testo.
+    @ViewBuilder private func workMinimal(_ s: AgentSession) -> some View {
+        TimelineView(.periodic(from: .now, by: 1)) { _ in
+            VStack(alignment: .leading, spacing: 2) {
+                Text(s.name).font(.system(size: 15, weight: .medium)).foregroundStyle(Color.primary).lineLimit(1)
+                Text(status(s)).font(.system(size: 12)).foregroundStyle(Night.t2).lineLimit(1)
+            }
+            .padding(.leading, 2).padding(.bottom, 8)
+        }
+        if let p = s.pending { approvalCard(p) }
+        if s.status == "done" {
+            if !s.summary.isEmpty {
+                Text(s.summary).font(.system(size: 13)).foregroundStyle(Color.primary.opacity(0.9)).lineSpacing(3)
+                    .textSelection(.enabled).padding(.horizontal, 2)
+            }
+            Text("\(AgentLook.duration(s))   \(s.steps.count) " + T("passi", "steps") + "   \(s.files.count) " + T("file", "files"))
+                .font(.system(size: 11.5).monospacedDigit()).foregroundStyle(Night.t2).padding(.horizontal, 2).padding(.top, 4)
+        } else {
+            if let ora = s.steps.last(where: { $0.state == "now" }) {
+                rigaMinimal(AgentLook.passo(ora).titolo, viva: true)
+            }
+            ForEach(Array(s.steps.filter { $0.state != "now" }.suffix(4).reversed())) { st in
+                rigaMinimal(AgentLook.passo(st).titolo, viva: false, fallita: st.state == "failed")
+            }
+        }
+    }
+
+    private func rigaMinimal(_ testo: String, viva: Bool, fallita: Bool = false) -> some View {
+        HStack(spacing: 8) {
+            Circle().fill(fallita ? Night.red : viva ? Color.primary : Night.t3).frame(width: 5, height: 5)
+            Text(testo).font(.system(size: viva ? 13 : 12, weight: viva ? .medium : .regular))
+                .foregroundStyle(viva ? Color.primary : Night.t2).lineLimit(1).truncationMode(.tail)
+        }
+        .padding(.horizontal, 4).padding(.vertical, 3)
     }
 
     private static func word(_ kind: String) -> String {
