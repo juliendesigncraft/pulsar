@@ -12,6 +12,7 @@ I built Pulsar with Claude. I designed every part, Claude wrote the Swift with m
 - **Can build it?** Run one script and you have everything unlocked, for free.
 - **Want it ready to use?** The signed app is on [Gumroad](https://juliendesigncraft.gumroad.com): Lite is free, the full app is a one-time purchase. Buying it is also how you support the project.
 - **Want to build it from scratch, your way?** The [`prompts/`](prompts) folder has one prompt per part, with the reference images and the problems that cost me days.
+- **On Windows?** There is a beta of the notch in [`windows/`](windows).
 - **Want your own version?** Open this folder in Claude Code. It reads `CLAUDE.md` and knows where everything lives, so you can ask for changes in plain words. Start with `/make-it-mine`.
 
 ## What it does
