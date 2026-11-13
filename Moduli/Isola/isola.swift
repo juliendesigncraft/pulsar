@@ -729,9 +729,6 @@ final class IslandModule {
                 if let a = s as? AgentIslandSource { w = 680; h = notch.height + 8 + a.height + 10 }
                 else if let ps = s.panelSize { w = ps.width; h = notch.height + 8 + ps.height + 10 }   // 25/10: misurata sul contenuto
                 else { w = 600; h = notch.height + 8 + 150 }
-            } else if NotchMinimal.shared.acceso {
-                // 13/11: il notch Minimal, una fila di quattro tessere (e il testo della canzone se suona)
-                w = min(NotchMinimal.larghezza, sf.width - 40); h = notch.height + 8 + NotchMinimal.altezza(model) + 10
             } else if schedaLarga {
                 w = min(OggiMetrics.larghezza, sf.width - 40); h = notch.height + 8 + OggiMetrics.altezza + 10
             } else if model.tab == .tessere {

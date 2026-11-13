@@ -102,7 +102,7 @@ struct NotchPulse: View {
     @ObservedObject private var look = GhieraLook.shared     // in White Matte: base grafite chiaro, testa grafite scuro
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: Leggera.on ? 1.0 / 15 : 1.0 / 30)) { ctx in   // 13/10: animazione tenuta anche in Pulsar leggera (l'autore)
+        TimelineView(.animation(minimumInterval: Leggera.on ? 1.0 / 12 : 1.0 / 20)) { ctx in   // 13/11: 20 (era 30), sempre acceso nel notch chiuso   // 13/10: animazione tenuta anche in Pulsar leggera (l'autore)
             Canvas { g, size in
                 let t = ctx.date.timeIntervalSinceReferenceDate
                 motion.advance(to: t, slow: phase == .waiting)

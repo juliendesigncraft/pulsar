@@ -280,7 +280,9 @@ final class DialStore: ObservableObject {
                 onTimerDone?()
             }
         }
-        refresh()
+        // 13/11, "alleggerisci Pulsar": il giro a orologio rilegge i processi audio al massimo ogni 4 s. I cambi veri
+        // (un'app che parte o smette di suonare) arrivano subito dall'ascoltatore della lista dei processi, che chiama refresh().
+        if Date().timeIntervalSince(lastRefresh) >= 4 { refresh() }
     }
 
     /// Cuffie, AirPods, altoparlanti: l'uscita è cambiata, i tap vanno rifatti sulla nuova.
@@ -1095,7 +1097,7 @@ struct DotGlyph: View {
         let hi0 = chiaro ? Color(red: 0.20, green: 0.22, blue: 0.28) : Color.white
         // volume, schermo e tastiera: la luce dei puntini va verso l'azzurro col livello (come le tacche)
         let hi = [.volume, .screen, .keyboard].contains(kind) ? hi0.mix(with: DotColors.azzurro, by: max(0, min(1, level))) : hi0
-        TimelineView(.animation(minimumInterval: Leggera.on ? 1.0 / 15 : 1.0 / 30)) { ctx in   // 13/10: animazione tenuta anche in Pulsar leggera (l'autore)
+        TimelineView(.animation(minimumInterval: Leggera.on ? 1.0 / 12 : 1.0 / 20)) { ctx in   // 13/11: 20 (era 30)   // 13/10: animazione tenuta anche in Pulsar leggera (l'autore)
             Canvas { g, size in
                 let t = ctx.date.timeIntervalSinceReferenceDate
                 let cell = min(size.width, size.height) / 5.0, px = cell * 0.78

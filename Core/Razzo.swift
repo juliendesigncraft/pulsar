@@ -42,7 +42,7 @@ struct Razzo: View {
                                 Color(red: 143/255, green: 199/255, blue: 255/255)]
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30)) { ctx in
+        TimelineView(.animation(minimumInterval: 1.0 / 20)) { ctx in   // 13/11, alleggerire: 20 fotogrammi bastano alla pixel art
             Canvas { g, size in
                 let t = ctx.date.timeIntervalSinceReferenceDate
                 let p = pixel

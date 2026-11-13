@@ -1536,7 +1536,7 @@ private struct EventRow: View {
 /// Il passo in corso: un puntino menta che respira (la rotella mini spariva sul blu).
 private struct BreathDot: View {
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: Leggera.on)) { ctx in
+        TimelineView(.animation(minimumInterval: 1 / 15, paused: Leggera.on)) { ctx in   // 13/11: 15 (era 30), è un punto che respira
             let t = ctx.date.timeIntervalSinceReferenceDate
             let k = 0.5 + 0.5 * sin(t * 2 * .pi / 1.8)
             ZStack {

@@ -72,7 +72,9 @@ final class BrowserMediaSource: ObservableObject, IslandSource {
         guard timer == nil else { return }
         let t = DispatchSource.makeTimerSource(queue: queue)
         t.schedule(deadline: .now() + 1, repeating: Leggera.on ? 4.0 : 2.0, leeway: .milliseconds(400))   // 13/10: leggera
-        t.setEventHandler { [weak self] in self?.poll() }
+        // 13/11, "alleggerisci Pulsar": ogni lettura scorre tutte le schede di tutte le finestre del browser. Senza un video
+        // trovato si cerca ogni 10 s (ogni 20 con Pulsar leggera); con un video aperto ogni 2 s, per tenere il tempo.
+        t.setEventHandler { [weak self] in self?.poll(); self?.ritmo() }
         timer = t
         t.resume()
     }
@@ -99,6 +101,12 @@ final class BrowserMediaSource: ObservableObject, IslandSource {
         }
         at = nil
         publish(nil, nil, false, nil)
+    }
+
+    /// Dopo ogni lettura: il ritmo giusto per quello che si è trovato.
+    private func ritmo() {
+        let ogni: Double = at != nil ? (Leggera.on ? 4 : 2) : (Leggera.on ? 20 : 10)
+        timer?.schedule(deadline: .now() + ogni, repeating: ogni, leeway: .milliseconds(500))
     }
 
     private func publish(_ v: YouTubeVideo?, _ p: PlayerState?, _ js: Bool, _ bundle: String?) {

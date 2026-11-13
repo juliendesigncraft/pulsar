@@ -50,11 +50,11 @@ struct VCard<Content: View>: View {
             .background {
                 ZStack {
                     RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Volta.card)
-                    if let motion {
+                    if let motion, !NotchMinimal.shared.acceso {     // 13/11: in Minimal niente colori che si muovono
                         MusicGlow(colors: motion, playing: true, strength: Theme.light ? 0.28 : 0.34)
                             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     }
-                    RadialGradient(colors: [(Theme.mode == .carbone ? Volta.t1 : glow).opacity(Theme.light ? 0.22 : Theme.mode == .carbone ? 0.06 : 0.30), .clear], center: UnitPoint(x: 0.5, y: 1.25), startRadius: 0, endRadius: 260)
+                    RadialGradient(colors: [(Theme.mode == .carbone ? Volta.t1 : glow).opacity(NotchMinimal.shared.acceso ? 0 : Theme.light ? 0.22 : Theme.mode == .carbone ? 0.06 : 0.30), .clear], center: UnitPoint(x: 0.5, y: 1.25), startRadius: 0, endRadius: 260)
                         .opacity(breathe ? (up ? 1 : 0.5) : 0.85)
                         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                 }
@@ -315,15 +315,11 @@ struct IslandPanelContent: View {
                     DropCard(model: model).padding(.horizontal, 20).padding(.bottom, 10)
                 }
             } else {
-                if minimal.acceso { MinimalHead(model: model) } else {
-                    IslandHead(model: model, status: status)          // nella fascia ai lati del notch
-                }
+                IslandHead(model: model, status: status)          // nella fascia ai lati del notch (anche in Minimal: tutte le schede)
                 Spacer().frame(height: 8)
                 Group {
                     if let s = model.source, !s.usesHome {
                         s.expandedView()
-                    } else if minimal.acceso {
-                        MinimalHome(model: model)
                     } else if model.tab == .tessere {
                         TileRow(tiles: model.tiles, widgets: model.widgets)
                     } else if model.tab == .oggi {
@@ -524,7 +520,7 @@ struct WelcomeCard: View {
     /// Il cielo, il razzo che vola piano attorno al centro e una riga sola, leggera, in basso al centro.
     private var casaPulita: some View {
         ZStack {
-            CieloPixel()
+            SfondoCasa()
             RazzoInVolo()
             if haDati {    // senza il dato (Spazio non ha ancora risposto) niente riga, mai "0 ore"
                 VStack {
@@ -546,7 +542,7 @@ struct WelcomeCard: View {
 
     private var conDati: some View {
         ZStack {
-            CieloPixel()
+            SfondoCasa()
             // un velo morbido dove sta il testo, così si legge sul cielo senza riquadri
             LinearGradient(colors: [Volta.body.opacity(Theme.light ? 0.55 : 0.6), .clear], startPoint: .topLeading, endPoint: .bottomTrailing)
             // 24/10 sera, l'autore: "togli il razzo nel riquadro a destra, altrimenti ce ne sono troppi"
@@ -665,7 +661,7 @@ struct CasaFredda: View {
 /// spinge quando sale e plana quando scende. Resta dritto: la pixel art ruotata si sfoca. Con Pulsar leggera sta fermo.
 private struct RazzoInVolo: View {
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: Leggera.on)) { ctx in
+        TimelineView(.animation(minimumInterval: 1 / 20, paused: Leggera.on)) { ctx in   // 13/11: 20 (era 30)
             let t = ctx.date.timeIntervalSinceReferenceDate
             GeometryReader { g in
                 let w = g.size.width, h = g.size.height

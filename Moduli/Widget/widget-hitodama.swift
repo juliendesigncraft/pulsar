@@ -94,7 +94,7 @@ private struct ControlsTile: View {
 /// Cinque LED in fila: blu-grafite come la griglia del notch, con la testa chiara che va e torna.
 struct LEDStrip: View {
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: Leggera.on)) { ctx in
+        TimelineView(.animation(minimumInterval: 1.0 / 20, paused: Leggera.on)) { ctx in   // 13/11: 20 (era 30)
             let t = ctx.date.timeIntervalSinceReferenceDate
             let head = 2 + 2 * sin(t * 2.2)                         // da 0 a 4 e ritorno, morbido
             HStack(spacing: 2.5) {
@@ -325,7 +325,7 @@ struct TileWeatherFX: View {
     }
 
     private var fx: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: Leggera.on)) { ctx in
+        TimelineView(.animation(minimumInterval: 1.0 / 20, paused: Leggera.on)) { ctx in   // 13/11: 20 (era 30)
             let t = ctx.date.timeIntervalSinceReferenceDate
             Canvas { g, sz in
                 let ink = Theme.light ? Color(red: 0.25, green: 0.3, blue: 0.4) : Color.white

@@ -28,6 +28,7 @@ source ./sorgenti.sh
 KIT="build/rowline-kit"
 kit_rowline "$KIT" -O -D DA_SORGENTE
 swiftc -O -D DA_SORGENTE ${=$(kit_flag "$KIT")} ${=LIBRERIE} $SPARKLE $CORE $MODULI -o "$APP/Contents/MacOS/Pulsar"
+strip -x "$APP/Contents/MacOS/Pulsar" 2>/dev/null || true   # no debug symbols: about half the size
 xattr -cr "$APP"
 
 # Ad-hoc signature. macOS asks for permissions again after every rebuild; to keep them, sign with a fixed

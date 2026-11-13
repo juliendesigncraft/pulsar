@@ -21,7 +21,7 @@ enum SalutoAvvio {
         if sc.safeAreaInsets.top > 0, let l = sc.auxiliaryTopLeftArea, let r = sc.auxiliaryTopRightArea {
             collo = CGSize(width: sc.frame.width - l.width - r.width, height: sc.safeAreaInsets.top)
         }
-        let larga: CGFloat = 520, alta = collo.height + 112
+        let larga: CGFloat = 500, alta = collo.height + 100    // 13/11, l'autore: più bassa di prima (112), poi un filo più alta
         let p = NSPanel(contentRect: NSRect(x: sc.frame.midX - larga / 2, y: sc.frame.maxY - alta, width: larga, height: alta),
                         styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         p.isOpaque = false; p.backgroundColor = .clear; p.hasShadow = false; p.ignoresMouseEvents = true
@@ -51,12 +51,23 @@ private struct VistaSaluto: View {
         ZStack(alignment: .top) {
             ZStack {
                 NotchShape(shoulder: 10, bottom: aperto ? 30 : 10).fill(Color.black)
-                Cielo(nato: nato).opacity(dentro ? 1 : 0).clipShape(NotchShape(shoulder: 10, bottom: 30))
-                Razzo(phase: fase, pixel: 4.2)
-                    .id(fase == .launch)          // il decollo parte da quando cambia fase (il razzo conta dal suo arrivo)
-                    .frame(width: 64, height: 92)
-                    .offset(y: collo.height / 2 + (dentro ? 0 : 14))
-                    .opacity(dentro ? 1 : 0)
+                // 13/11, l'autore: "aggiungi un margine di contorno": stelle e razzo dentro un riquadro staccato dai bordi
+                // (12 pt ai lati e in basso, sotto la fascia del notch), come le card dell'isola
+                VStack(spacing: 0) {
+                    Spacer().frame(height: collo.height - 8)      // 13/11: il bordo alto del riquadro più su, dentro la fascia del notch
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color(white: 0.075))
+                        Cielo(nato: nato).clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        Razzo(phase: fase, pixel: 3.6)
+                            .id(fase == .launch)          // il decollo parte da quando cambia fase (il razzo conta dal suo arrivo)
+                            .frame(width: 56, height: 80)
+                            .offset(y: dentro ? 0 : 12)
+                            .clipShape(Rectangle())
+                    }
+                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.07), lineWidth: 1))
+                    .padding(.horizontal, 12).padding(.bottom, 12)
+                }
+                .opacity(dentro ? 1 : 0)
             }
             .frame(width: w, height: h)
         }
@@ -73,8 +84,10 @@ private struct VistaSaluto: View {
 }
 
 /// Stelline fisse (sempre le stesse) che si accendono una dopo l'altra e respirano piano.
-private struct Cielo: View {
+/// 13/11: anche lo sfondo della Casa nel notch Minimal (SfondoCasa in isola-minimal.swift).
+struct Cielo: View {
     let nato: Date
+    var colore: Color = .white            // nella Casa di White Matte le stelle sono scure
     private static let stelle: [(x: Double, y: Double, r: Double, ritardo: Double)] = {
         var s: UInt64 = 13_11_2026
         func rnd() -> Double { s = s &* 6364136223846793005 &+ 1442695040888963407; return Double(s >> 33) / Double(1 << 31) }
@@ -90,7 +103,7 @@ private struct Cielo: View {
                     let a = accesa * respiro * 0.85
                     guard a > 0.01 else { continue }
                     let r = CGRect(x: st.x * size.width - st.r / 2, y: st.y * size.height - st.r / 2, width: st.r, height: st.r)
-                    g.fill(Path(ellipseIn: r), with: .color(.white.opacity(a)))
+                    g.fill(Path(ellipseIn: r), with: .color(colore.opacity(a)))
                 }
             }
         }

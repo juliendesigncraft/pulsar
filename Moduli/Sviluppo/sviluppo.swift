@@ -163,9 +163,22 @@ final class ModuloBarraSviluppo: NSObject, ModuloPulsar {
             .prefix(6).map { $0 }
     }
 
+    /// 13/11, "alleggerisci Pulsar": la cartella di lavoro di un processo si legge dal sistema (proc_pidinfo) e si ricorda
+    /// per pid, invece di lanciare un lsof a ogni server a ogni giro.
+    private static var cartelle: [Int32: String] = [:]
+    private static let bloccoCartelle = NSLock()
     private static func cartella(di pid: Int32) -> String {
-        let t = esegui("/usr/sbin/lsof", ["-a", "-p", String(pid), "-d", "cwd", "-Fn"]) ?? ""
-        return t.split(separator: "\n").first { $0.hasPrefix("n") }.map { String($0.dropFirst()) } ?? ""
+        bloccoCartelle.lock(); defer { bloccoCartelle.unlock() }
+        if let c = cartelle[pid] { return c }
+        var info = proc_vnodepathinfo()
+        let n = proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &info, Int32(MemoryLayout<proc_vnodepathinfo>.size))
+        var c = ""
+        if n == Int32(MemoryLayout<proc_vnodepathinfo>.size) {
+            c = withUnsafeBytes(of: info.pvi_cdir.vip_path) { String(cString: $0.bindMemory(to: CChar.self).baseAddress!) }
+        }
+        if cartelle.count > 200 { cartelle.removeAll() }
+        cartelle[pid] = c
+        return c
     }
 
     private static func esegui(_ exe: String, _ args: [String]) -> String? {
