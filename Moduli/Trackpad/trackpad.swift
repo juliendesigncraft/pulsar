@@ -254,9 +254,11 @@ final class StatoRiscontro: ObservableObject {
 private struct VistaRiscontro: View {
     @ObservedObject var s: StatoRiscontro
     // Sul nero del notch si usa sempre la scala scura: azzurro chiaro per il simbolo, azzurro di Spazio per la barra.
-    private let chiaro = Color(red: 0xD6 / 255, green: 0xEB / 255, blue: 1)
-    private let azzurro = Color(red: 0x8F / 255, green: 0xC7 / 255, blue: 1)
-    private let scuro = Color(red: 0x1F / 255, green: 0x4F / 255, blue: 0x8C / 255)
+    // 14/11 l'autore: in Carbone niente azzurro, un bianco sfumato (grigio scuro, grigio, bianco).
+    private var carbone: Bool { Theme.mode == .carbone }
+    private var chiaro: Color { carbone ? Color(white: 0.95) : Color(red: 0xD6 / 255, green: 0xEB / 255, blue: 1) }
+    private var azzurro: Color { carbone ? Color(white: 0.72) : Color(red: 0x8F / 255, green: 0xC7 / 255, blue: 1) }
+    private var scuro: Color { carbone ? Color(white: 0.32) : Color(red: 0x1F / 255, green: 0x4F / 255, blue: 0x8C / 255) }
 
     var body: some View {
         VStack(spacing: 0) {

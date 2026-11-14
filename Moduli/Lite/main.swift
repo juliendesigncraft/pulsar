@@ -937,7 +937,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func makeStatusItems() {
         // Icona principale (creata per prima: resta più a destra).
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: 32)   // 13/11 sera, l'autore: "le icone sono così vicine": la capsula (22 pt) aveva 1 pt per lato, ora 5
         statusItem.autosaveName = "pulsar.main"
         statusItem.button?.image = Icons.toggle()
         mainMenu = NSMenu()

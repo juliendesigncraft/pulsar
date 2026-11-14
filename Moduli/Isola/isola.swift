@@ -205,6 +205,14 @@ struct IslandView: View {
                 // 17/10: collo nel notch, pannello sotto la barra dei menu; ai lati del collo la barra resta libera
                 IslandShellFill(neckWidth: model.notchWidth, neckHeight: model.notchHeight)
                     .opacity(isolaAperta ? 1 : 0)
+                // 13/11 sera, l'autore: "i bordi del notch sul convertitore sono angolati e dritti". In Carbone, con Stow
+                // aperto, le spalle curve in alto restavano del grigio del fondo, uguale alla barra dei menu, e sparivano
+                // (misurato: in Dark Matte c'erano). Negli aspetti scuri la fascia del notch, spalle comprese, è sempre nera.
+                if !Theme.light {
+                    formaIsola.fill(Color.black)
+                        .mask(VStack(spacing: 0) { Rectangle().frame(height: model.notchHeight); Spacer(minLength: 0) })
+                        .opacity(isolaAperta ? 1 : 0)
+                }
             }
         }
         .contentShape(Rectangle())

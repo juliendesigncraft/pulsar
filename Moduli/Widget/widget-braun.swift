@@ -26,6 +26,19 @@ private struct ClockTile: View {
     let cells: Int
     @ObservedObject private var look = GhieraLook.shared
     var body: some View {
+        // 13/11 sera, l'autore: "orologio da centrare". In una tessera sola il quadrante prende la misura della tessera
+        // e sta esattamente al centro (prima 74 pt fissi, spostato verso destra quando la tessera era più larga).
+        if cells < 2 {
+            GeometryReader { g in
+                let d = min(g.size.width, g.size.height) - 12
+                BraunDial().frame(width: d, height: d).position(x: g.size.width / 2, y: g.size.height / 2)
+            }
+        } else {
+            doppia
+        }
+    }
+
+    private var doppia: some View {
         HStack(spacing: 14) {
             BraunDial().frame(width: 74, height: 74)
             if cells >= 2 {

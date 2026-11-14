@@ -9,7 +9,7 @@ enum AgentMode: String, CaseIterable {
     case notte, bianco, sfondo, carbone
     // 11/10 sera: Notte è il Dark Matte; Bianco è il White Matte (stessa grammatica, chiaro, piatto e opaco)
     // 12/11: Carbone, quasi nero con un filo di viola, card un tono sopra, interruttori monocromi (VORSSAINT.md)
-    var title: String { ["notte": "Dark Matte", "bianco": "White Matte", "sfondo": T("Sfondo", "Wallpaper"), "carbone": "Carbone"][rawValue]! }
+    var title: String { ["notte": "Dark Matte", "bianco": "White Matte", "sfondo": T("Sfondo", "Wallpaper"), "carbone": T("Carbone", "Carbon")][rawValue]! }
     /// Notte, Bianco, Carbone e Sfondo: colonna di icone che resta accanto al pannello.
     var rail: Bool { true }
     /// I temi a tinta piena (Dark Matte, White Matte, Carbone): stesse forme, cambiano solo i colori di Night e Volta.

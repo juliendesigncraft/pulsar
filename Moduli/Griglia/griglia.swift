@@ -384,16 +384,24 @@ private struct GridBackground: View {
             // trasparenti e sotto passava la scrivania. Base piena e sfocatura opaca.
             (Theme.light ? Color(white: 0.95) : Night.bottom)
             if let img = image {
-                Image(nsImage: img).resizable().scaledToFill().blur(radius: model.background == nil ? 40 : 0, opaque: true)
+                Image(nsImage: img).resizable().scaledToFill().blur(radius: proprio == nil ? 40 : 0, opaque: true)
                     .clipped()
             } else {
                 GridBlur(dark: !Theme.light)
             }
-            (Theme.light ? Color(white: 0.97) : Night.bottom).opacity(model.background == nil ? 0.72 : 0.35)
+            (Theme.light ? Color(white: 0.97) : Night.bottom).opacity(proprio == nil ? 0.72 : 0.35)
         }
     }
+    /// 13/11 notte, l'autore: "il launchbar è ancora grigio di sfondo! e non bianco minimal". Lo sfondo scelto era quello
+    /// del tema scuro e restava fisso: in White Matte, sotto il velo
+    /// bianco, diventava un grigio medio. Uno sfondo dei temi non conta come scelta propria: si segue la Scrivania.
+    private var proprio: String? {
+        guard let p = model.background else { return nil }
+        let n = (p as NSString).lastPathComponent      // gli sfondi dei temi: matte-… e carbone.png
+        return n.hasPrefix("matte-") || n == "carbone.png" ? nil : p
+    }
     private var image: NSImage? {
-        if let p = model.background { return NSImage(contentsOfFile: p) }
+        if let p = proprio { return NSImage(contentsOfFile: p) }
         guard let s = model.screen, let u = NSWorkspace.shared.desktopImageURL(for: s) else { return nil }
         return NSImage(contentsOf: u)
     }

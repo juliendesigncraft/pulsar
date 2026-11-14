@@ -19,7 +19,7 @@ import SwiftUI
 
 enum PulsarTema: String, CaseIterable {
     case darkMatte = "dark-matte", whiteMatte = "white-matte", carbone = "carbone"   // 12/11: Carbone
-    var title: String { switch self { case .darkMatte: return "Dark Matte"; case .whiteMatte: return "White Matte"; case .carbone: return "Carbone" } }
+    var title: String { switch self { case .darkMatte: return "Dark Matte"; case .whiteMatte: return "White Matte"; case .carbone: return T("Carbone", "Carbon") } }
     var look: AgentMode { switch self { case .darkMatte: return .notte; case .whiteMatte: return .bianco; case .carbone: return .carbone } }
     var chiaro: Bool { self == .whiteMatte }
 

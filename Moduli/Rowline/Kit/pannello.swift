@@ -20,23 +20,31 @@ final class Tinta: ObservableObject {
     }
     /// Ripresa del reel: il tema si sceglie da RowlineDemo (comando "tema:chiaro"), il Mac dell'autore non cambia.
     var forzato: Bool? { didSet { if let f = forzato { chiaro = f } else { leggi() } } }
+    /// 14/11, reel 71: "rifai Rowline in Carbon". Carbon (il tema "carbone" di Pulsar): grigi caldi quasi neri e niente
+    /// azzurro. Si legge da tema.json come il chiaro; la ripresa del reel lo forza senza toccare il tema del Mac.
+    @Published var carbone = false
+    var carboneForzato: Bool? { didSet { if let f = carboneForzato { carbone = f } else { leggi() } } }
 
     func leggi() {
-        if let f = forzato { chiaro = f; return }
+        if let f = forzato { chiaro = f } 
+        if let f = carboneForzato { carbone = f }
+        if forzato != nil && carboneForzato != nil { return }
         guard let d = try? Data(contentsOf: file), let j = try? JSONSerialization.jsonObject(with: d) as? [String: Any] else { return }
-        chiaro = (j["chiaro"] as? Bool) ?? false
+        if forzato == nil { chiaro = (j["chiaro"] as? Bool) ?? false }
+        if carboneForzato == nil { carbone = (j["tema"] as? String) == "carbone" }
     }
 
     private func c(_ h: UInt32) -> Color { Color(red: Double(h >> 16 & 255) / 255, green: Double(h >> 8 & 255) / 255, blue: Double(h & 255) / 255) }
-    var alto: Color { chiaro ? c(0xF6F7F9) : c(0x2B2E3C) }
-    var basso: Color { chiaro ? c(0xEEF0F3) : c(0x22252F) }
+    private var k: Bool { carbone && !chiaro }
+    var alto: Color { chiaro ? c(0xF6F7F9) : k ? c(0x1E1B1F) : c(0x2B2E3C) }
+    var basso: Color { chiaro ? c(0xEEF0F3) : k ? c(0x141215) : c(0x22252F) }
     var testo: Color { chiaro ? c(0x1E2028) : .white }
     var t2: Color { testo.opacity(0.56) }
     var t3: Color { testo.opacity(chiaro ? 0.42 : 0.34) }
     var linea: Color { testo.opacity(chiaro ? 0.10 : 0.08) }
     var velo: Color { Color.black.opacity(chiaro ? 0.05 : 0.16) }
     var sel: Color { Color.black.opacity(chiaro ? 0.10 : 0.28) }
-    var azzurro: Color { chiaro ? c(0x3B82D0) : c(0x8FC7FF) }
+    var azzurro: Color { chiaro ? c(0x3B82D0) : k ? c(0xE9E6EC) : c(0x8FC7FF) }     // Carbon: accento grigio chiaro, come Volta.scelta
     var schema: ColorScheme { chiaro ? .light : .dark }
 }
 

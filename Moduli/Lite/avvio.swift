@@ -12,6 +12,9 @@ enum SalutoAvvio {
         set { Impostazioni.set(newValue, .avvioSaluto) }
     }
     private static var finestra: NSPanel?
+    /// 13/11 sera, solo per il reel 71 (stock-reel.swift): il riquadro riempie il pannello dall'alto, così in presentazione non
+    /// resta la fascia vuota del notch (l'autore: "meglio riempisse tutto lo spazio"); le spalle restano curve (v4).
+    static var perReel = false
 
     /// Mostra il saluto una volta (circa 3,4 s). `forza` per le prove (pulsar://avvio) anche a saluto spento.
     static func mostra(forza: Bool = false) {
@@ -21,7 +24,7 @@ enum SalutoAvvio {
         if sc.safeAreaInsets.top > 0, let l = sc.auxiliaryTopLeftArea, let r = sc.auxiliaryTopRightArea {
             collo = CGSize(width: sc.frame.width - l.width - r.width, height: sc.safeAreaInsets.top)
         }
-        let larga: CGFloat = 500, alta = collo.height + 100    // 13/11, l'autore: più bassa di prima (112), poi un filo più alta
+        let larga: CGFloat = 500, alta = collo.height + 100 + 8   // 13/11 sera: il riquadro (100) sotto la fascia del notch, più il margine sotto
         let p = NSPanel(contentRect: NSRect(x: sc.frame.midX - larga / 2, y: sc.frame.maxY - alta, width: larga, height: alta),
                         styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         p.isOpaque = false; p.backgroundColor = .clear; p.hasShadow = false; p.ignoresMouseEvents = true
@@ -45,27 +48,31 @@ private struct VistaSaluto: View {
     @State private var fase: Razzo.Phase = .idle
     @State private var nato = Date()
     private static let curva = Animation.timingCurve(0.22, 1, 0.36, 1, duration: 0.55)
+    // 13/11 sera, l'autore: "le proporzioni del saluto sono sbagliatissime, i margini sopra e sotto sono diversi da destra
+    // e sinistra". Misurati sulla ripresa: 2 pt ai lati, 11 sotto, 24 sopra (il nero è 10 pt più stretto per lato, le spalle).
+    // Ora lo stesso margine dal contorno nero su tutti e quattro i lati, e angoli concentrici (esterno = interno + margine).
+    private static let spalla: CGFloat = 10, margine: CGFloat = 8, raggio: CGFloat = 20
 
     var body: some View {
         let w = aperto ? larga : collo.width, h = aperto ? alta : collo.height
         ZStack(alignment: .top) {
             ZStack {
-                NotchShape(shoulder: 10, bottom: aperto ? 30 : 10).fill(Color.black)
+                NotchShape(shoulder: Self.spalla, bottom: aperto ? Self.raggio + Self.margine : 10).fill(Color.black)
                 // 13/11, l'autore: "aggiungi un margine di contorno": stelle e razzo dentro un riquadro staccato dai bordi
                 // (12 pt ai lati e in basso, sotto la fascia del notch), come le card dell'isola
                 VStack(spacing: 0) {
-                    Spacer().frame(height: collo.height - 8)      // 13/11: il bordo alto del riquadro più su, dentro la fascia del notch
+                    Spacer().frame(height: SalutoAvvio.perReel ? Self.margine : collo.height)          // 13/11 sera, l'autore: il notch vero copriva la punta del razzo
                     ZStack {
-                        RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color(white: 0.075))
-                        Cielo(nato: nato).clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        RoundedRectangle(cornerRadius: Self.raggio, style: .continuous).fill(Color(white: 0.075))
+                        Cielo(nato: nato).clipShape(RoundedRectangle(cornerRadius: Self.raggio, style: .continuous))
                         Razzo(phase: fase, pixel: 3.6)
                             .id(fase == .launch)          // il decollo parte da quando cambia fase (il razzo conta dal suo arrivo)
-                            .frame(width: 56, height: 80)
+                            .frame(width: 56).frame(maxHeight: .infinity)   // alta quanto il riquadro: al decollo esce dal suo bordo
                             .offset(y: dentro ? 0 : 12)
-                            .clipShape(Rectangle())
                     }
-                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.07), lineWidth: 1))
-                    .padding(.horizontal, 12).padding(.bottom, 12)
+                    .clipShape(RoundedRectangle(cornerRadius: Self.raggio, style: .continuous))   // il razzo esce dal bordo del riquadro, non dalla sua cornice
+                    .overlay(RoundedRectangle(cornerRadius: Self.raggio, style: .continuous).stroke(Color.white.opacity(0.07), lineWidth: 1))
+                    .padding(.horizontal, Self.spalla + Self.margine).padding(.bottom, Self.margine)
                 }
                 .opacity(dentro ? 1 : 0)
             }

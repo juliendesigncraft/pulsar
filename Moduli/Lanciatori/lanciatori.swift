@@ -108,11 +108,17 @@ final class Lanciatori: ObservableObject {
     private let dirIcone = Cartelle.dati.appendingPathComponent("favicon", isDirectory: true)
     private var inCorso = Set<String>()
     private var timer: Timer?
+    private var appIcone: [String: String] = [:]          // chiave -> percorso dell'app, per ridisegnarle al cambio di stile
+    private var stileIcone: AnyCancellable?
 
     init(fonte: FonteLanciatori = Lanciatori.fonteDiSerie) {
         self.fonte = fonte
         try? FileManager.default.createDirectory(at: dirIcone, withIntermediateDirectories: true)
         aggiorna()
+        stileIcone = IconeApp.shared.$versione.dropFirst().receive(on: RunLoop.main).sink { [weak self] _ in
+            guard let self else { return }
+            for (k, p) in self.appIcone { self.icone[k] = IconeApp.shared.icona(p) }
+        }
     }
 
     /// Col modulo acceso: la rilettura periodica, se la fonte la vuole.
@@ -124,6 +130,7 @@ final class Lanciatori: ObservableObject {
     func ferma() { timer?.invalidate(); timer = nil }
 
     func aggiorna() {
+        guard !perReelAttivo else { return }
         let s = fonte.cartelleScrivania                    // riletta a ogni giro: un'app installata dopo compare da sola
         if !s.isEmpty, s != scrivania { scrivania = s; for v in s.flatMap(\.voci) { icona(per: v) } }   // vuota = le decide usa()
         fonte.leggi { [weak self] nuove in
@@ -146,6 +153,12 @@ final class Lanciatori: ObservableObject {
         let r = cartelle.filter { c in !scrivania.contains { $0.id == c.id } }
         return r.isEmpty ? cartelle : r
     }
+
+    /// 13/11, reel 71: una lista da mostrare che non si salva (app di sistema al posto dei giochi); nil torna alla fonte vera.
+    /// La rilettura ogni 60 s della fonte vera resta ferma finché la lista del reel è in vista (la v3 del 13/11 a 49 s
+    /// aveva rimesso i giochi al posto delle app di sistema).
+    func perReel(_ c: [Cartella]?) { perReelAttivo = c != nil; if let c { usa(c) } else { aggiorna() } }
+    private var perReelAttivo = false
 
     private func usa(_ c: [Cartella]) {
         cartelle = c
@@ -202,7 +215,12 @@ final class Lanciatori: ObservableObject {
     private func icona(per v: Voce) {
         let h = Lanciatori.chiave(v)
         guard icone[h] == nil, !inCorso.contains(h) else { return }
-        if v.u.hasPrefix("file://"), let u = URL(string: v.u) { icone[h] = NSWorkspace.shared.icon(forFile: u.path); return }   // l'icona vera dell'app
+        if v.u.hasPrefix("file://"), let u = URL(string: v.u) {   // l'icona vera dell'app
+            // 13/11 notte: da IconeApp e non da NSWorkspace. Dentro Pulsar NSWorkspace dà lo stile icone di prima del cambio
+            // di tema: in Carbon alcune icone uscivano chiare e altre scure. Al cambio di stile si ridisegnano (vedi init).
+            appIcone[h] = u.path
+            icone[h] = IconeApp.shared.icona(u.path); return
+        }
         let file = dirIcone.appendingPathComponent(h + ".icon"), vuoto = dirIcone.appendingPathComponent(h + ".none")
         if let d = try? Data(contentsOf: file), let im = NSImage(data: d) { icone[h] = im; return }
         // un sito senza icona si richiede dopo una settimana, non a ogni apertura
@@ -309,9 +327,9 @@ private struct LanciatoriTile: View {
                                     let on = c.id == cartella?.id
                                     Text(c.titolo)
                                         .font(.system(size: 11))
-                                        .foregroundStyle(on ? Volta.primT : Volta.pillT)
+                                        .foregroundStyle(on ? Lanciatori.sceltaT : Volta.pillT)
                                         .padding(.horizontal, 9).frame(height: 20)
-                                        .background(Capsule().fill(on ? Volta.prim : Volta.pill))
+                                        .background(Capsule().fill(on ? Lanciatori.sceltaFondo : Volta.pill))
                                         .contentShape(Capsule())
                                         .onTapGesture { withAnimation(.easeOut(duration: 0.25)) { scelta = c.id } }
                                 }
@@ -369,8 +387,8 @@ private struct Cerchio: View {
                         .frame(width: lato * 0.56, height: lato * 0.56)
                         .clipShape(RoundedRectangle(cornerRadius: lato * 0.14, style: .continuous))
                 } else {
-                    Text(String(voce.n.prefix(1)).uppercased())
-                        .font(.system(size: lato * 0.4)).foregroundStyle(Volta.a2)
+                    Image(systemName: Lanciatori.simboloRipiego(voce))
+                        .font(.system(size: lato * 0.36)).foregroundStyle(Volta.t2)
                 }
             }
             .frame(width: lato, height: lato)
@@ -426,9 +444,9 @@ struct LanciatoriGriglia: View {
                             let on = c.id == cartella?.id
                             Text(c.titolo)
                                 .font(.system(size: 11))
-                                .foregroundStyle(on ? Volta.primT : Volta.pillT)
+                                .foregroundStyle(on ? Lanciatori.sceltaT : Volta.pillT)
                                 .padding(.horizontal, 10).frame(height: 22)
-                                .background(Capsule().fill(on ? Volta.prim : Volta.pill))
+                                .background(Capsule().fill(on ? Lanciatori.sceltaFondo : Volta.pill))
                                 .contentShape(Capsule())
                                 .onTapGesture {
                                     withAnimation(.easeOut(duration: 0.25)) { scelta = c.id }
@@ -568,17 +586,27 @@ final class LanciatoriStash {
 
     /// In vista per qualche secondo (menu e pulsar://lanciatori?mostra=1).
     func mostra() { esci(); pianifica(dopo: 4) }
+    /// 14/11, reel 71: rientra subito (la scrivania che si svuota pezzo per pezzo).
+    /// 14/11, reel 71: dove sta la finestra dello stash.
+    var finestra: NSRect? { win?.frame }
+    func rientraOra() { apri?.cancel(); apri = nil; nascondi?.cancel(); nascondi = nil; pianifica(dopo: 0) }
 
     /// La finestra è più alta e larga della striscia: sopra c'è l'aria per l'ingrandimento e il nome.
     private func cornice(_ visibile: Bool) -> NSRect {
         let f = schermo.frame, s = misura
-        return NSRect(x: f.minX + Self.margine, y: visibile ? f.minY + Self.fondo : f.minY - s.height - 2, width: s.width, height: s.height)
+        // 13/11 notte, registro Pulsar-stash.log: 20 elementi, l'ultimo a 685 pt, ma la finestra era larga 525 (la misura presa
+        // quando la lista era più corta). Gli elementi oltre restavano fuori: "l'ultima icona non riesco a prenderla".
+        // La larghezza ora è almeno quella della fila disegnata, ingrandimento compreso.
+        let w = max(s.width, StashVista.larghezzaBase + StashVista.extra * 2.4)
+        return NSRect(x: f.minX + Self.margine, y: visibile ? f.minY + Self.fondo : f.minY - s.height - 2, width: w, height: s.height)
     }
 
     /// La striscia vera, per sapere se il mouse ci è sopra (la finestra intorno è quasi tutta trasparente).
     private var striscia: NSRect {
         guard let w = win else { return .zero }
-        return NSRect(x: w.frame.minX, y: w.frame.minY, width: StashVista.larghezzaBase, height: StashVista.altezza + StashVista.extra)
+        // 13/11 notte, l'autore: "l'ultima icona non riesco a prenderla". Con l'ingrandimento la fila si allunga a destra
+        // oltre la larghezza a riposo: l'ultima icona finiva fuori da qui e lo stash si chiudeva. Si conta anche l'allungamento.
+        return NSRect(x: w.frame.minX, y: w.frame.minY, width: StashVista.larghezzaBase + StashVista.extra * 2.4, height: StashVista.altezza + StashVista.extra)
     }
 
     private func guarda(_ p: NSPoint) {
@@ -596,6 +624,7 @@ final class LanciatoriStash {
             pianifica(dopo: Tempo.attesaUscita)
         }
     }
+
 
     /// 26/10, l'autore: "non serve si apra ogni volta che si sorvola il Dock normale. Se sorvolo quella parte, lo fai comparire."
     /// Prima (24/10, "come un Dock unico") usciva da tutto il bordo in basso, quindi anche usando il Dock di macOS.
@@ -650,19 +679,21 @@ final class LanciatoriStash {
     static func misuraDock() {
         let orient = UserDefaults(suiteName: "com.apple.dock")?.string(forKey: "orientation") ?? "bottom"
         guard orient == "bottom", AXIsProcessTrusted(),
-              let d = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock").first else { bordoDock = nil; return }
+              let d = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock").first else { return }   // 13/11: misura fallita, resta l'ultima buona
         let el = AXUIElementCreateApplication(d.processIdentifier)
         AXUIElementSetMessagingTimeout(el, 0.2)
         var figli: CFTypeRef?
         guard AXUIElementCopyAttributeValue(el, kAXChildrenAttribute as CFString, &figli) == .success,
-              let lista = (figli as? [AXUIElement])?.first else { bordoDock = nil; return }
+              let lista = (figli as? [AXUIElement])?.first else { return }
         var p: CFTypeRef?, s: CFTypeRef?
         AXUIElementCopyAttributeValue(lista, kAXPositionAttribute as CFString, &p)
         AXUIElementCopyAttributeValue(lista, kAXSizeAttribute as CFString, &s)
         var pt = CGPoint.zero, sz = CGSize.zero
         if let p { AXValueGetValue(p as! AXValue, .cgPoint, &pt) }
         if let s { AXValueGetValue(s as! AXValue, .cgSize, &sz) }
-        bordoDock = sz.width > 0 ? pt.x : nil
+        // 13/11 notte: prima una misura fallita rimetteva nil e il numero di tessere cambiava fra un disegno e l'altro
+        // (registro: fila disegnata 709 pt, finestra 525). Ora si tiene l'ultima misura buona.
+        if sz.width > 0 { bordoDock = pt.x }
     }
 
     /// Quante tessere stanno prima del Dock. 25/10, l'autore: "si sovrappone ancora al Dock, riduci di due".
@@ -704,7 +735,9 @@ final class AspettoIcone: ObservableObject {
         let g: UserDefaults? = UserDefaults.standard
         let tema = g?.string(forKey: "AppleIconAppearanceTheme") ?? "RegularAutomatic"
         let sistemaScuro = g?.string(forKey: "AppleInterfaceStyle") == "Dark"
-        let st: Stile = tema.hasPrefix("Clear") ? .vetro : tema.hasPrefix("Tinted") ? .tinta : .colori
+        // 13/11 sera, l'autore: "perché era in tinta e non in vetro? Perché sono scure le icone?". Nel riquadro le icone
+        // sono in vetro sia con Clear sia con Tinted di macOS (Tinted resta per il Dock, dove il vetro era slavato).
+        let st: Stile = tema.hasPrefix("Clear") || tema.hasPrefix("Tinted") ? .vetro : .colori
         let sc = tema.hasSuffix("Dark") ? true : tema.hasSuffix("Light") ? false : sistemaScuro
         var t = NSColor.controlAccentColor
         if let c = g?.string(forKey: "AppleIconAppearanceCustomTintColor")?.split(separator: " ").compactMap({ Double($0) }), c.count >= 3 {
@@ -722,6 +755,8 @@ private struct StashVista: View {
     @ObservedObject var stato = StashStato.shared
     @State private var scelta: String?
     @State private var mouseX: CGFloat?
+    /// 14/11, reel 71: il puntatore finto del reel (StashStato.reelX) fa l'onda come il mouse vero.
+    private var mx: CGFloat? { stato.reelX ?? mouseX }
 
     static let lato: CGFloat = 36            // tilesize del Dock dell'autore
     static let altezza: CGFloat = 47         // la striscia del Dock, misurata
@@ -770,14 +805,16 @@ private struct StashVista: View {
         var larghe: [CGFloat] = []
         for i in elems.indices {
             var sc: CGFloat = 1
-            if let m = mouseX, basi[i] == Self.lato, Self.extra > 0 {
-                let d = abs(m - centri[i]) / (Self.lato * 2.5)          // l'onda prende circa due icone per lato
+            if let m = mx, basi[i] == Self.lato, Self.extra > 0 {
+                // 13/11 notte, l'autore: "se hovero sulla prima me le prende entrambe le prime due". L'onda era larga
+                // due icone e mezzo per lato: ora 1,6, la vicina cresce poco e quella sotto il mouse si riconosce.
+                let d = abs(m - centri[i]) / (Self.lato * 1.6)
                 if d < 1 { sc = 1 + (Self.extra / Self.lato) * CGFloat((cos(Double(d) * .pi) + 1) / 2) }
             }
             larghe.append(basi[i] * sc)
         }
         var vicino: Int?
-        if let m = mouseX {
+        if let m = mx {
             var acc = Self.bordo
             for i in elems.indices {
                 if m >= acc && m < acc + larghe[i] { vicino = basi[i] == Self.lato ? i : nil; break }
@@ -814,7 +851,7 @@ private struct StashVista: View {
             case .ended: mouseX = nil
             }
         }
-        .animation(.interactiveSpring(response: 0.18, dampingFraction: 0.9), value: mouseX)
+        .animation(.interactiveSpring(response: 0.18, dampingFraction: 0.9), value: mx)
         }
         .environment(\.colorScheme, aspetto.scuro ? .dark : .light)
         .fixedSize()
@@ -867,6 +904,8 @@ final class StashStato: ObservableObject {
     /// 25/10, l'autore: "si apre in modo glitchato, forse perché il mouse è già su un'app e parte subito l'ingrandimento".
     /// Falso mentre lo stash sale: l'onda dell'ingrandimento parte solo a stash fermo e al primo movimento del mouse.
     @Published var pronto = false
+    /// 14/11, reel 71: la x del puntatore finto dentro la finestra dello stash (nil = vale il mouse vero).
+    @Published var reelX: CGFloat?
 }
 
 /// 25/10, l'autore: "premendo la freccia non si vedono gli altri titoli, deve mostrarli tutti". Come una pila del Dock
@@ -938,6 +977,8 @@ private struct Nome: View {
             .shadow(color: alone.opacity(0.9), radius: 3).shadow(color: alone.opacity(0.6), radius: 8)
             .offset(y: -26)
             .opacity(visibile ? 1 : 0)
+            // 13/11 notte, l'autore: due nomi sovrapposti. Il vecchio sfumava mentre arrivava il nuovo: ora si cambia di colpo.
+            .animation(nil, value: visibile)
             .allowsHitTesting(false)
     }
 }
@@ -953,7 +994,8 @@ private struct IconaStash<C: View>: View {
         ZStack {
             switch aspetto.stile {
             case .vetro:
-                forma.fill(Color.clear).glassEffect(.regular.tint(Color.white.opacity(aspetto.scuro ? 0.04 : 0.25)), in: forma)
+                // nel tema chiaro un velo grigio sotto il vetro, se no i simboli chiari spariscono sul bianco
+                forma.fill(Color.clear).glassEffect(.regular.tint(aspetto.scuro ? Color.white.opacity(0.04) : Color.black.opacity(0.18)), in: forma)
             default:
                 forma.fill(LinearGradient(colors: aspetto.scuro ? [Color(white: 0.23), Color(white: 0.11)] : [Color(white: 0.99), Color(white: 0.90)],
                                           startPoint: .top, endPoint: .bottom))
@@ -967,7 +1009,7 @@ private struct IconaStash<C: View>: View {
     private var colore: Color {
         switch aspetto.stile {
         case .tinta: return Color(nsColor: aspetto.tinta).opacity(aspetto.scuro ? 0.95 : 0.85)
-        case .vetro: return Color.primary.opacity(0.85)
+        case .vetro: return Color.white.opacity(0.95)
         case .colori: return Color.primary.opacity(0.7)
         }
     }
@@ -994,21 +1036,44 @@ private struct IconaSito: View {
                     .frame(width: lato * 0.5, height: lato * 0.5)
                     .clipShape(RoundedRectangle(cornerRadius: lato * 0.1, style: .continuous))
             } else {
-                Text(String(voce.n.prefix(1)).uppercased()).font(.system(size: lato * 0.4))
+                Image(systemName: Lanciatori.simboloRipiego(voce)).font(.system(size: lato * 0.36))
             }
         }
     }
 }
 
 extension Lanciatori {
+    /// 13/11 notte, l'autore: "c'è un bug con le icone dei testi". Senza icona (libri di Spazio, app in locale) si
+    /// vedeva l'iniziale grande, sembrava un errore: ora un simbolo che dice cos'è.
+    static func simboloRipiego(_ v: Voce) -> String {
+        if v.u.contains("#/libri") { return "book.closed" }
+        if v.u.contains("127.0.0.1") || v.u.contains("localhost") || v.app != nil { return "macwindow" }
+        return "globe"
+    }
+    /// 13/11 sera, l'autore: accenti il meno possibile; la pillola scelta è grigio chiaro sul fondo scuro, grigio scuro sul chiaro.
+    static var sceltaFondo: Color { Theme.light ? Color(white: 0.20) : Color(white: 0.90) }
+    static var sceltaT: Color { Theme.light ? Color.white : Color(white: 0.10) }
     private static var mono: [String: NSImage] = [:]
     /// Una sola tinta come le icone Tinted o Clear di macOS: luminanza dell'icona portata sulla tinta (o sul grigio).
     static func mono(_ im: NSImage, chiave: String, tinta: NSColor?, scuro: Bool) -> NSImage {
-        let t = (tinta ?? (scuro ? NSColor(white: 0.92, alpha: 1) : NSColor(white: 0.18, alpha: 1))).usingColorSpace(.sRGB) ?? .gray
+        let t = (tinta ?? (scuro ? NSColor(white: 0.92, alpha: 1) : NSColor(white: 0.98, alpha: 1))).usingColorSpace(.sRGB) ?? .gray   // 13/11: chiare anche nel tema chiaro
         let k = "\(chiave)|\(t.redComponent),\(t.greenComponent),\(t.blueComponent)|\(scuro)"
         if let g = mono[k] { return g }
-        guard let tiff = im.tiffRepresentation, let ci = CIImage(data: tiff),
-              let f = CIFilter(name: "CIColorMonochrome") else { return im }
+        guard let tiff = im.tiffRepresentation, let ci = CIImage(data: tiff) else { return im }
+        // 13/11 sera, l'autore: "perché sono scure le icone?". Nel vetro (nessuna tinta) le parti chiare dell'icona
+        // diventano il simbolo chiaro e il fondo scuro diventa trasparente: le icone nere delle sue app non restano nere.
+        // Solo nei temi chiari: in Carbon e Dark l'autore vuole le icone scure ("in alto a sinistra sono rimaste chiare... perché?").
+        if tinta == nil, !scuro, let gamma = CIFilter(name: "CIGammaAdjust"), let maschera = CIFilter(name: "CIMaskToAlpha") {
+            gamma.setValue(ci, forKey: kCIInputImageKey)
+            gamma.setValue(1.6, forKey: "inputPower")              // i grigi scuri del fondo scendono quasi a zero
+            maschera.setValue(gamma.outputImage, forKey: kCIInputImageKey)
+            if let out = maschera.outputImage, let cg = CIContext().createCGImage(out, from: out.extent) {
+                let g = NSImage(cgImage: cg, size: im.size)
+                mono[k] = g
+                return g
+            }
+        }
+        guard let f = CIFilter(name: "CIColorMonochrome") else { return im }
         f.setValue(ci, forKey: kCIInputImageKey)
         f.setValue(CIColor(red: t.redComponent, green: t.greenComponent, blue: t.blueComponent), forKey: kCIInputColorKey)
         f.setValue(1.0, forKey: kCIInputIntensityKey)
@@ -1079,6 +1144,8 @@ private struct DesktopVista: View {
         // 25/10: giochi e Learn stanno già nello stash in basso: se la fonte dà cartelle sue (le app), il riquadro mostra quelle
         LanciatoriGriglia(cartelleFisse: dock.scrivania.isEmpty ? nil : dock.scrivania)
             .padding(18)
+            // 13/11 sera, l'autore: "il launchbar ha uno sfondo diverso da quello della scrivania, sul bianco è grigio".
+            // 13/11 notte: tolto per errore (l'autore parlava della griglia ⌘4) e rimesso com'era: "perché non c'è più il rettangolo attorno?"
             .background(RoundedRectangle(cornerRadius: 28, style: .continuous).fill(Volta.body))
             .environment(\.colorScheme, look.mode.scheme)
             .id(look.mode.rawValue)

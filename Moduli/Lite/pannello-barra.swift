@@ -140,9 +140,13 @@ final class PannelloBarra: NSObject, NSPopoverDelegate {
         popover.appearance = NSAppearance(named: Theme.light ? .aqua : .darkAqua)
         // Con un'app a tutto schermo la barra dei menu è nascosta e l'icona sta fuori dallo schermo (misurato il 12/11:
         // il pannello finiva in alto a sinistra). Allora ci si attacca a un'ancora invisibile nello stesso punto, sotto la barra.
-        if let f = bottone.window?.frame, let sc = NSScreen.screens.first(where: { $0.frame.contains(NSPoint(x: f.midX, y: $0.frame.midY)) }),
-           f.minY >= sc.frame.maxY - 1 {     // l'icona sta sopra il bordo dello schermo: barra nascosta
-            ancora.setFrame(NSRect(x: f.minX, y: sc.frame.maxY - 34, width: f.width, height: 2), display: false)
+        // 13/11, l'autore: "la terza sezione si sposta a sinistra dello schermo". La scheda App accende e spegne app che
+        // hanno un'icona nella barra: quando una compare o sparisce l'icona di Pulsar scivola e il pannello la seguiva.
+        // Ora ci si attacca sempre all'ancora, ferma dove stava l'icona all'apertura.
+        if let f = bottone.window?.frame, let sc = NSScreen.screens.first(where: { $0.frame.contains(NSPoint(x: f.midX, y: $0.frame.midY)) }) {
+            let nascosta = f.minY >= sc.frame.maxY - 1     // l'icona sta sopra il bordo dello schermo: barra nascosta
+            let y = nascosta ? sc.frame.maxY - 34 : f.minY
+            ancora.setFrame(NSRect(x: f.minX, y: y, width: f.width, height: 2), display: false)
             ancora.orderFrontRegardless()
             popover.show(relativeTo: ancora.contentView!.bounds, of: ancora.contentView!, preferredEdge: .minY)
         } else {
@@ -154,6 +158,11 @@ final class PannelloBarra: NSObject, NSPopoverDelegate {
     }
 
     func chiudi() { popover.performClose(nil) }
+    /// 14/11, reel 71: il riquadro del contenuto sullo schermo (senza la punta), per portarci il puntatore finto.
+    var cornice: NSRect? {
+        guard popover.isShown, let v = popover.contentViewController?.view, let w = v.window else { return nil }
+        return w.convertToScreen(v.convert(v.bounds, to: nil))
+    }
 
     private var guardiani: [Any] = []
     /// Clic in un'altra app o in un'altra finestra di Pulsar, o Esc: si chiude. I clic dentro il pannello no.
