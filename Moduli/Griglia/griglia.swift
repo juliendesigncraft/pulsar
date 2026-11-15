@@ -529,7 +529,7 @@ struct GridView: View {
 
     private var search: some View {
         HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass").font(.system(size: 13, weight: .medium)).foregroundStyle(Color.primary.opacity(0.5))
+            Image(systemName: "magnifyingglass").font(.system(size: 13, weight: .regular)).foregroundStyle(Color.primary.opacity(0.5))
             TextField(T("Cerca", "Search"), text: $model.query)
                 .textFieldStyle(.plain).font(.system(size: 14)).focused($searching)
         }
@@ -541,7 +541,7 @@ struct GridView: View {
     private var notificationsColumn: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(T("Notifiche", "Notifications")).font(.system(size: 13, weight: .semibold))
+                Text(T("Notifiche", "Notifications")).font(.system(size: 13, weight: .regular))
                 Spacer()
                 if notes.hasSeen {
                     Button(T("Togli le viste", "Clear seen")) { withAnimation { notes.clearSeen() } }
@@ -555,7 +555,7 @@ struct GridView: View {
                         HStack(alignment: .top, spacing: 10) {
                             Circle().fill(n.seen ? Color.clear : Night.green).frame(width: 6, height: 6).padding(.top, 5)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(n.title).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                                Text(n.title).font(.system(size: 12, weight: .regular)).lineLimit(1)
                                 if !n.body.isEmpty {
                                     Text(n.body).font(.system(size: 11)).foregroundStyle(Color.primary.opacity(0.6)).lineLimit(2)
                                 }
@@ -563,7 +563,7 @@ struct GridView: View {
                             }
                             Spacer(minLength: 0)
                             Button { withAnimation { notes.remove(n.id) } } label: {
-                                Image(systemName: "xmark").font(.system(size: 9, weight: .semibold)).frame(width: 18, height: 18)
+                                Image(systemName: "xmark").font(.system(size: 9, weight: .medium)).frame(width: 18, height: 18)
                                     .background(Circle().fill(Volta.card2))
                             }
                             .buttonStyle(.plain)
@@ -594,7 +594,7 @@ struct GridView: View {
                     Button { tiles.layout.add(w.id) } label: { Label(w.title, systemImage: w.symbol) }
                 }
             } label: {
-                Image(systemName: "plus.square.on.square").font(.system(size: 13, weight: .medium)).foregroundStyle(Color.primary.opacity(0.55))
+                Image(systemName: "plus.square.on.square").font(.system(size: 13, weight: .regular)).foregroundStyle(Color.primary.opacity(0.55))
                     .frame(width: 32, height: 32).background(Circle().fill(Volta.card))
             }
             .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
@@ -610,7 +610,7 @@ struct GridView: View {
 
     private func tool(_ symbol: String, _ help: String, lit: Bool = false, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 13, weight: .medium)).foregroundStyle(Color.primary.opacity(lit ? 0.95 : 0.55))
+            Image(systemName: symbol).font(.system(size: 13, weight: .regular)).foregroundStyle(Color.primary.opacity(lit ? 0.95 : 0.55))
                 .frame(width: 32, height: 32).background(Circle().fill(lit ? Volta.pill : Volta.card))
         }
         .buttonStyle(.plain).help(help)
@@ -658,7 +658,7 @@ struct GridView: View {
     private func folderHeader(_ c: String) -> some View {
         HStack(spacing: 10) {
             Button { model.openCategory = nil } label: {
-                Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold)).frame(width: 30, height: 30)
+                Image(systemName: "chevron.left").font(.system(size: 13, weight: .regular)).frame(width: 30, height: 30)
                     .background(Circle().fill(Volta.card2))
             }
             .buttonStyle(.plain)

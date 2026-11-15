@@ -534,14 +534,14 @@ struct VistaRegole: View {
                     DispatchQueue.main.async { Pannello.shared.ricostruisci(); Barra.shared.aggiorna() }
                 })
 
-                Text(T("Larghezza per app", "Width per app")).font(.system(size: 15, weight: .semibold)).padding(.top, 22)
+                Text(T("Larghezza per app", "Width per app")).font(.system(size: 15, weight: .regular)).padding(.top, 22)
                 Text(T("Tasto destro su una linea della barra per sceglierla", "Right-click a line in the slider to set one")).font(.system(size: 11)).foregroundStyle(t.t3).padding(.top, 2)
                 Griglia(voci: m.regoleApp.keys.sorted(), etichetta: { b in
                     let v = m.regoleApp[b] ?? 0.5
                     return abs(v - 1.0 / 3) < 0.01 ? "⅓" : abs(v - 0.5) < 0.01 ? "½" : abs(v - 2.0 / 3) < 0.01 ? "⅔" : T("intera", "full")
                 }, togli: { m.regoleApp[$0] = nil }).padding(.top, 12)
 
-                Text(T("Libere", "Always free")).font(.system(size: 15, weight: .semibold)).padding(.top, 22)
+                Text(T("Libere", "Always free")).font(.system(size: 15, weight: .regular)).padding(.top, 22)
                 Text(T("Queste app non entrano mai in fila", "These apps never join the row")).font(.system(size: 11)).foregroundStyle(t.t3).padding(.top, 2)
                 Griglia(voci: m.escluse, etichetta: { _ in nil }, togli: { b in m.escluse.removeAll { $0 == b } }).padding(.top, 12)
                 if let a = m.appInFuoco, !m.escluse.contains(a.bundle) {
@@ -593,7 +593,7 @@ struct Griglia: View {
                         Text(Icone.nome(b)).font(.system(size: 12)).lineLimit(1)
                         if let e = etichetta(b) { Text(e).font(.system(size: 12)).foregroundStyle(t.azzurro) }
                         Spacer(minLength: 0)
-                        Button { togli(b) } label: { Image(systemName: "xmark").font(.system(size: 9, weight: .semibold)) }
+                        Button { togli(b) } label: { Image(systemName: "xmark").font(.system(size: 9, weight: .medium)) }
                             .buttonStyle(.plain).foregroundStyle(t.t3)
                     }
                     .padding(.horizontal, 10).frame(height: 32)

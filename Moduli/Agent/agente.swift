@@ -459,7 +459,7 @@ struct NotchPill: View {
                                 if !p.detail.isEmpty { Text(p.detail).foregroundStyle(Color.primary.opacity(0.75)) }
                             }
                             .font(.system(size: 11)).foregroundStyle(Color.primary.opacity(0.5))
-                            Text(p.main).font(.system(size: 13.5, weight: .medium)).foregroundStyle(Color.primary)
+                            Text(p.main).font(.system(size: 13.5, weight: .regular)).foregroundStyle(Color.primary)
                                 .lineLimit(1).truncationMode(.tail)
                                 .contentTransition(.opacity)
                         }
@@ -571,12 +571,12 @@ struct AgentPanel: View {
         HStack(spacing: 10) {
             IconSquare(symbol: "sparkle", tint: .orange, size: 28)
             VStack(alignment: .leading, spacing: 1) {
-                Text("Claude Code").font(.system(size: 13, weight: .semibold))
+                Text("Claude Code").font(.system(size: 13, weight: .regular))
                 Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
             }
             Spacer()
             Button(action: close) {
-                Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
+                Image(systemName: "xmark").font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
                     .frame(width: 22, height: 22).background(Circle().fill(.quaternary))
             }
             .buttonStyle(.plain)
@@ -609,7 +609,7 @@ struct AgentPanel: View {
     private var empty: some View {
         VStack(spacing: 10) {
             Image(systemName: "moon.zzz").font(.system(size: 28, weight: .light)).foregroundStyle(.tertiary)
-            Text("All quiet").font(.system(size: 13, weight: .semibold))
+            Text("All quiet").font(.system(size: 13, weight: .regular))
             Text("Start Claude Code in a terminal and it shows up here.")
                 .font(.system(size: 12)).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
@@ -657,7 +657,7 @@ struct AgentPanel: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 10) {
                     IconSquare(symbol: "terminal.fill", tint: .yellow, size: 26)
-                    Text("\(store.current?.agent ?? "Claude") wants to run").font(.system(size: 13, weight: .medium))
+                    Text("\(store.current?.agent ?? "Claude") wants to run").font(.system(size: 13, weight: .regular))
                 }
                 Text(p.what).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
                     .padding(10).frame(maxWidth: .infinity, alignment: .leading)
@@ -776,7 +776,7 @@ struct IconSquare: View {
     let tint: Color
     var size: CGFloat = 22
     var body: some View {
-        Image(systemName: symbol).font(.system(size: size * 0.5, weight: .semibold)).foregroundStyle(.white)
+        Image(systemName: symbol).font(.system(size: size * 0.5, weight: size * 0.5 < 12 ? .medium : .regular)).foregroundStyle(.white)
             .frame(width: size, height: size)
             .background(RoundedRectangle(cornerRadius: size * 0.26, style: .continuous).fill(tint.gradient))
     }
@@ -932,7 +932,7 @@ private struct RailButton: View {
         let lato: CGFloat = grande ? NightRail.tastoLibero : 32, raggio: CGFloat = grande ? 12 : 9
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: grande ? 17 : 13.5, weight: .medium))
+                .font(.system(size: grande ? 17 : 13.5, weight: .regular))
                 .foregroundStyle(fg.opacity(active ? 0.96 : hover ? 0.9 : 0.62))
                 .frame(width: lato, height: lato)
                 .background(RoundedRectangle(cornerRadius: raggio, style: .continuous)
@@ -1087,7 +1087,7 @@ struct NightPanel: View {
         HStack(alignment: .top, spacing: 10) {
             if let glyph { PixelGlyph(palette: glyph).padding(.top, 3) }
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.primary).lineLimit(1)
+                Text(title).font(.system(size: 15, weight: .regular)).foregroundStyle(Color.primary).lineLimit(1)
                 Text(sub).font(.system(size: 12)).foregroundStyle(Night.t2).lineLimit(1)
             }
         }
@@ -1143,7 +1143,7 @@ struct NightPanel: View {
             let p = AgentLook.passo(ora)
             NightCard {
                 Text(T("Adesso", "Now")).font(.system(size: 11.5)).foregroundStyle(Night.t2)
-                Text(p.titolo).font(.system(size: 14, weight: .medium)).foregroundStyle(Color.primary).lineLimit(2)
+                Text(p.titolo).font(.system(size: 14, weight: .regular)).foregroundStyle(Color.primary).lineLimit(2)
                 if !p.sotto.isEmpty {
                     Text(p.sotto).font(.system(size: 11.5)).foregroundStyle(Night.t2).lineLimit(1).truncationMode(.tail)
                 }
@@ -1184,7 +1184,7 @@ struct NightPanel: View {
     @ViewBuilder private func workMinimal(_ s: AgentSession) -> some View {
         TimelineView(.periodic(from: .now, by: 1)) { _ in
             VStack(alignment: .leading, spacing: 2) {
-                Text(s.name).font(.system(size: 15, weight: .medium)).foregroundStyle(Color.primary).lineLimit(1)
+                Text(s.name).font(.system(size: 15, weight: .regular)).foregroundStyle(Color.primary).lineLimit(1)
                 Text(status(s)).font(.system(size: 12)).foregroundStyle(Night.t2).lineLimit(1)
             }
             .padding(.leading, 2).padding(.bottom, 8)
@@ -1240,7 +1240,7 @@ struct NightPanel: View {
                     Button { store.selectedID = x.id } label: {
                         HStack(spacing: 6) {
                             Circle().fill(dot(x)).frame(width: 5, height: 5)
-                            Text(x.label(among: store.sessions)).font(.system(size: 12, weight: .medium))
+                            Text(x.label(among: store.sessions)).font(.system(size: 12, weight: .regular))
                         }
                         .foregroundStyle(Color.primary.opacity(on ? 0.96 : 0.72))
                         .padding(.horizontal, 11).frame(height: 26)
@@ -1273,7 +1273,7 @@ struct NightPanel: View {
         NightCard {
             HStack(spacing: 8) {
                 Circle().fill(Night.amber).frame(width: 6, height: 6)
-                Text("\(store.current?.agent ?? "Claude") wants to run").font(.system(size: 13.5, weight: .semibold))
+                Text("\(store.current?.agent ?? "Claude") wants to run").font(.system(size: 13.5, weight: .regular))
                     .foregroundStyle(Color.primary)
             }
             Text(p.what).font(.system(size: 12, design: .monospaced)).foregroundStyle(Color.primary.opacity(0.9))
@@ -1350,8 +1350,8 @@ struct NightPanel: View {
                                           "\(store.active.count) working, \(store.sessions.count) in all"))
         Button { store.selectedID = nil } label: {
             HStack(spacing: 6) {
-                Image(systemName: "dot.radiowaves.left.and.right").font(.system(size: 10.5, weight: .semibold))
-                Text("Follow the newest").font(.system(size: 12, weight: .medium))
+                Image(systemName: "dot.radiowaves.left.and.right").font(.system(size: 10.5, weight: .medium))
+                Text("Follow the newest").font(.system(size: 12, weight: .regular))
             }
             .foregroundStyle(Color.primary.opacity(store.selectedID == nil ? 0.96 : 0.72))
             .padding(.horizontal, 11).frame(height: 26)
@@ -1416,14 +1416,14 @@ struct NightPanel: View {
                     Text("⌃⌥P").font(.system(size: 11)).foregroundStyle(Night.t3)
                     if store.hasPending {
                         Button { store.answer(true) } label: {
-                            Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Night.ink)
+                            Image(systemName: "checkmark").font(.system(size: 10, weight: .medium)).foregroundStyle(Night.ink)
                                 .frame(width: 24, height: 24).background(Circle().fill(Night.prominent))
                         }
                         .buttonStyle(.plain).help("Allow (⌃⌥Y)")
                     } else {
                         let ready = live && !draft.trimmingCharacters(in: .whitespaces).isEmpty
                         Button { sendDraft() } label: {
-                            Image(systemName: "arrow.up").font(.system(size: 10, weight: .bold))
+                            Image(systemName: "arrow.up").font(.system(size: 10, weight: .medium))
                                 .foregroundStyle(ready ? Night.ink : Night.t3)
                                 .frame(width: 24, height: 24).background(Circle().fill(ready ? Night.green : Color.primary.opacity(0.07)))
                         }
@@ -1471,7 +1471,7 @@ private struct RoundIcon: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 10.5, weight: .semibold))
+                .font(.system(size: 10.5, weight: .medium))
                 .foregroundStyle(Color.primary.opacity(active ? 0.96 : !enabled ? 0.25 : hover ? 0.95 : 0.7))
                 .frame(width: 28, height: 28)
                 .background(Circle().fill(active ? Night.sel : Color.primary.opacity(bare ? (hover && enabled ? 0.08 : 0) : (hover && enabled ? 0.13 : 0.07))))
@@ -1510,7 +1510,7 @@ private struct EventRow: View {
             RoundedRectangle(cornerRadius: 1.5).fill(bar.opacity(state == "done" ? 0.75 : 1))
                 .frame(width: 3).frame(maxHeight: .infinity)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 13, weight: .medium)).foregroundStyle(Color.primary)
+                Text(title).font(.system(size: 13, weight: .regular)).foregroundStyle(Color.primary)
                     .lineLimit(1).truncationMode(.middle)
                 if !sub.isEmpty {
                     Text(sub).font(.system(size: 11.5)).foregroundStyle(Night.t2).lineLimit(1).truncationMode(.tail)
@@ -1520,8 +1520,8 @@ private struct EventRow: View {
             if !value.isEmpty { Text(value).font(.system(size: 12).monospacedDigit()).foregroundStyle(Night.t2) }
             switch state {
             case "now": BreathDot()
-            case "done": Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Night.t3)
-            case "failed": Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Night.red)
+            case "done": Image(systemName: "checkmark").font(.system(size: 10, weight: .medium)).foregroundStyle(Night.t3)
+            case "failed": Image(systemName: "xmark").font(.system(size: 10, weight: .medium)).foregroundStyle(Night.red)
             default: EmptyView()
             }
         }
@@ -1553,7 +1553,7 @@ private struct NightPill: ButtonStyle {
     let prominent: Bool
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 13, weight: .medium))
+            .font(.system(size: 13, weight: .regular))
             .foregroundStyle(prominent ? Night.onProminent : Color.primary.opacity(0.9))
             .frame(maxWidth: .infinity, minHeight: 32)
             .background(Capsule().fill(prominent ? Night.prominent : Color.primary.opacity(0.08)))

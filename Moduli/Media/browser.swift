@@ -253,7 +253,7 @@ private struct YouTubeTile: View {
         HStack(spacing: 12) {
             if !src.needsJS {
                 Button { src.playPause() } label: {
-                    Image(systemName: src.player?.playing == true ? "pause.fill" : "play.fill").font(.system(size: 12, weight: .medium))
+                    Image(systemName: src.player?.playing == true ? "pause.fill" : "play.fill").font(.system(size: 12, weight: .regular))
                         .frame(width: 22, height: 20).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

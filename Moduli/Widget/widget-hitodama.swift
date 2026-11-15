@@ -124,7 +124,7 @@ private struct ControlChip: View {
             // 12/10 sera: provate le icone a puntini, bocciate ("non si capisce niente"): simboli di sistema come prima.
             // Acceso = sotto l'icona una fila di LED con la luce che corre (l'autore: "un'illuminazione led quando sono attivi")
             VStack(spacing: 4) {
-                Image(systemName: symbol).font(.system(size: 13, weight: .medium))
+                Image(systemName: symbol).font(.system(size: 13, weight: .regular))
                     .foregroundStyle(Color.primary.opacity(on == false ? 0.4 : 0.9))
                 if on == true { LEDStrip() }
             }
@@ -162,7 +162,7 @@ private struct PowerTile: View {
             ForEach(Array(all.prefix(n).enumerated()), id: \.offset) { _, a in
                 Button(action: a.2) {
                     VStack(spacing: 3) {
-                        Image(systemName: a.0).font(.system(size: 13, weight: .medium))
+                        Image(systemName: a.0).font(.system(size: 13, weight: .regular))
                         if cells > 1 { Text(a.1).font(.system(size: 9.5)) }
                     }
                     .foregroundStyle(Color.primary.opacity(0.85))

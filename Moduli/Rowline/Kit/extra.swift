@@ -82,7 +82,7 @@ struct VistaFoglio: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Rowline").font(.system(size: 20, weight: .semibold))
+                Text("Rowline").font(.system(size: 20, weight: .regular))
                 Spacer()
                 Text(T("Lascia i tasti per chiudere", "Let go to close")).font(.system(size: 11)).foregroundStyle(t.t3)
             }

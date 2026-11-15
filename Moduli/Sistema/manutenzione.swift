@@ -225,7 +225,7 @@ struct SchedaManutenzione: View {
         VStack(alignment: .leading, spacing: 6) {
             if m.vista != .elenco {
                 Button { m.vista = .elenco; m.esito = nil } label: {
-                    HStack(spacing: 5) { Image(systemName: "chevron.left").font(.system(size: 10, weight: .semibold)); Text(T("Indietro", "Back")).font(.system(size: 11.5)) }
+                    HStack(spacing: 5) { Image(systemName: "chevron.left").font(.system(size: 10, weight: .medium)); Text(T("Indietro", "Back")).font(.system(size: 11.5)) }
                         .foregroundStyle(s.t2).contentShape(Rectangle())
                 }.buttonStyle(.plain).padding(.leading, 4).padding(.bottom, 2)
             }
@@ -252,7 +252,7 @@ struct SchedaManutenzione: View {
             HStack(spacing: 10) {
                 Image(systemName: simbolo).font(.system(size: 13)).foregroundStyle(s.t2).frame(width: 18)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(titolo).font(.system(size: 12.5, weight: .medium)).foregroundStyle(s.t1)
+                    Text(titolo).font(.system(size: 12.5, weight: .regular)).foregroundStyle(s.t1)
                     Text(sotto).font(.system(size: 10.5)).foregroundStyle(s.t2).lineLimit(1)
                 }
                 Spacer()
@@ -274,7 +274,7 @@ struct SchedaManutenzione: View {
             ForEach(m.aggiornamenti) { a in
                 Button { NSWorkspace.shared.open(a.apri) } label: {
                     HStack {
-                        Text(a.nome).font(.system(size: 12.5, weight: .medium)).foregroundStyle(s.t1).lineLimit(1)
+                        Text(a.nome).font(.system(size: 12.5, weight: .regular)).foregroundStyle(s.t1).lineLimit(1)
                         Spacer()
                         Text("\(a.attuale) → \(a.nuova)").font(.system(size: 11).monospacedDigit()).foregroundStyle(s.t2)
                     }
@@ -290,7 +290,7 @@ struct SchedaManutenzione: View {
         if let a = m.appScelta, m.vista == .disinstalla {
             HStack(spacing: 8) {
                 Image(nsImage: a.icona).resizable().frame(width: 26, height: 26)
-                Text(a.nome).font(.system(size: 13, weight: .medium)).foregroundStyle(s.t1)
+                Text(a.nome).font(.system(size: 13, weight: .regular)).foregroundStyle(s.t1)
             }.padding(.leading, 4)
         }
         if let e = m.esito { nota(e) }
@@ -317,7 +317,7 @@ struct SchedaManutenzione: View {
             let totale = m.file.filter(\.scelta).reduce(Int64(0)) { $0 + $1.byte }
             Button { m.cestina() } label: {
                 Text(T("Sposta nel Cestino  ", "Move to Trash  ") + Misura.byte(totale))
-                    .font(.system(size: 12, weight: .medium)).foregroundStyle(s.primT)
+                    .font(.system(size: 12, weight: .regular)).foregroundStyle(s.primT)
                     .frame(maxWidth: .infinity).frame(height: 30).background(Capsule().fill(s.prim))
             }.buttonStyle(.plain).disabled(totale == 0).opacity(totale == 0 ? 0.4 : 1).padding(.top, 4)
             nota(T("Niente si cancella: dal Cestino si torna indietro.", "Nothing is deleted: you can restore from the Trash."))

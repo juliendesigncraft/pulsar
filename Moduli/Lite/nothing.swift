@@ -153,7 +153,7 @@ private struct QuickTileView: View {
                 ZStack {
                     // l'azzurro chiaro di Spazio (#8FC7FF) in tutti e due i temi (l'autore: "più chiaro, come in Spazio")
                     Circle().fill(tile.on ? Color(red: 0x8F / 255, green: 0xC7 / 255, blue: 1) : Color.primary.opacity(over ? 0.14 : 0.08))
-                    Image(systemName: tile.symbol).font(.system(size: 14, weight: .medium))
+                    Image(systemName: tile.symbol).font(.system(size: 14, weight: .regular))
                         .foregroundStyle(tile.on ? Color.black.opacity(0.78) : Color.primary.opacity(0.8))
                 }
                 .frame(width: 40, height: 40)

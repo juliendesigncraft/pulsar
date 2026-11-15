@@ -121,7 +121,7 @@ struct TileRow: View {
                 ForEach(widgets.filter { w in !tiles.layout.tiles.contains { $0.id == w.id } }, id: \.id) { w in
                     Button { tiles.layout.add(w.id) } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "plus").font(.system(size: 9, weight: .bold)).foregroundStyle(Volta.a2)
+                            Image(systemName: "plus").font(.system(size: 9, weight: .medium)).foregroundStyle(Volta.a2)
                             Image(systemName: w.symbol).font(.system(size: 11))
                             Text(w.title).font(.system(size: 11.5)).fixedSize()
                         }
@@ -211,7 +211,7 @@ private struct MusicTile: View {
                 HStack(spacing: 10) {
                     art(56).shadow(color: .black.opacity(0.3), radius: 3, x: 1)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(t.title).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                        Text(t.title).font(.system(size: 12, weight: .regular)).lineLimit(1)
                         Text(t.artist).font(.system(size: 11)).foregroundStyle(Color.primary.opacity(0.62)).lineLimit(1)
                         Spacer(minLength: 2)
                         HStack(spacing: 10) {
@@ -228,7 +228,7 @@ private struct MusicTile: View {
                 HStack(spacing: 10) {
                     record(t, side: side, playing: playing)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(t.title).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                        Text(t.title).font(.system(size: 12, weight: .regular)).lineLimit(1)
                         Text(t.artist).font(.system(size: 11)).foregroundStyle(Color.primary.opacity(0.62)).lineLimit(1)
                         if cells >= 3, !live, !t.album.isEmpty {        // mentre suona l'album lascia posto a barra e tasti
                             Text(t.album).font(.system(size: 10.5)).foregroundStyle(Color.primary.opacity(0.42)).lineLimit(1)
@@ -248,7 +248,7 @@ private struct MusicTile: View {
                 // 14/10: il lettore a tutto schermo con copertina e giradischi (widget-braun.swift)
                 .overlay(alignment: .topTrailing) {
                     Button { FullPlayer.shared.toggle(media: media) } label: {
-                        Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 9.5, weight: .semibold))
+                        Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Color.primary.opacity(0.55)).frame(width: 20, height: 20).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).help(T("Lettore a tutto schermo", "Full screen player"))
@@ -298,7 +298,7 @@ private struct MusicTile: View {
     }
 
     private func button(_ symbol: String, _ size: CGFloat, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) { Image(systemName: symbol).font(.system(size: size, weight: .medium)).frame(width: 20, height: 18).contentShape(Rectangle()) }
+        Button(action: action) { Image(systemName: symbol).font(.system(size: size, weight: size < 12 ? .medium : .regular)).frame(width: 20, height: 18).contentShape(Rectangle()) }
             .buttonStyle(.plain)
     }
 }
@@ -429,7 +429,7 @@ private struct WeatherTile: View {
                 if cells == 1 {
                     VStack(spacing: 4) {
                         Image(systemName: WeatherParse.symbol(code: w.code, isDay: w.isDay)).symbolRenderingMode(.multicolor).font(.system(size: 22))
-                        Text(temp).font(.system(size: 15, weight: .medium))
+                        Text(temp).font(.system(size: 15, weight: .regular))
                     }
                     .frame(maxWidth: .infinity)
                 } else {
@@ -586,7 +586,7 @@ private struct CalendarTile: View {
                         if model.denied {
                             Text(T("Consenti il Calendario", "Allow Calendar")).font(.system(size: 11)).foregroundStyle(Night.amber)
                         } else if let n = model.next {
-                            Text(n.title).font(.system(size: 12, weight: .medium)).lineLimit(2)
+                            Text(n.title).font(.system(size: 12, weight: .regular)).lineLimit(2)
                             Text(n.allDay ? T("Tutto il giorno", "All day") : "\(Self.hour.string(from: n.start)) - \(Self.hour.string(from: n.end))")
                                 .font(.system(size: 10).monospacedDigit()).foregroundStyle(Color.primary.opacity(0.55))
                         } else {
@@ -632,7 +632,7 @@ private struct TimerTile: View {
                         if store.timerEnd == nil { store.timerEnd = Date().addingTimeInterval(Double(store.timerMinutes * 60)); store.now = Date() }
                         else { store.timerEnd = nil }
                     } label: {
-                        Image(systemName: left == nil ? "play.fill" : "stop.fill").font(.system(size: 12, weight: .medium))
+                        Image(systemName: left == nil ? "play.fill" : "stop.fill").font(.system(size: 12, weight: .regular))
                             .frame(width: 30, height: 24).background(Capsule().fill(Color.primary.opacity(0.1)))
                     }
                     .buttonStyle(.plain)
@@ -647,7 +647,7 @@ private struct TimerTile: View {
             store.timerMinutes = max(1, min(60, store.timerMinutes + d))
             Impostazioni.set(store.timerMinutes, .dialTimer)
         } label: {
-            Image(systemName: symbol).font(.system(size: 10, weight: .semibold)).frame(width: 22, height: 22)
+            Image(systemName: symbol).font(.system(size: 10, weight: .medium)).frame(width: 22, height: 22)
                 .background(Circle().fill(Color.primary.opacity(0.08)))
         }
         .buttonStyle(.plain)

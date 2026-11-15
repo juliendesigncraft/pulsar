@@ -196,7 +196,7 @@ private struct OggiTesta: View {
     var body: some View {
         HStack(spacing: 7) {
             Image(systemName: symbol).font(.system(size: 11, weight: .medium)).foregroundStyle(Volta.a2)
-            Text(title).font(.system(size: 13, weight: .medium)).foregroundStyle(Volta.t1).lineLimit(1)
+            Text(title).font(.system(size: 13, weight: .regular)).foregroundStyle(Volta.t1).lineLimit(1)
             Spacer(minLength: 4)
             if !detail.isEmpty { Text(detail).font(.system(size: 11.5)).foregroundStyle(Volta.t3).lineLimit(1) }
         }
@@ -261,7 +261,7 @@ private struct AttivitaCard: View {
             Button { withAnimation(.easeOut(duration: 0.25)) { cose.spunta(t) } } label: {
                 ZStack {
                     Circle().strokeBorder(Volta.t3, lineWidth: 1.2).opacity(t.fatto ? 0 : 1)
-                    if t.fatto { Circle().fill(Volta.a2); Image(systemName: "checkmark").font(.system(size: 8, weight: .bold)).foregroundStyle(Volta.body) }
+                    if t.fatto { Circle().fill(Volta.a2); Image(systemName: "checkmark").font(.system(size: 8, weight: .medium)).foregroundStyle(Volta.body) }
                 }
                 .frame(width: 15, height: 15).contentShape(Circle())
             }
@@ -367,7 +367,7 @@ private struct FocusCard: View {
                 store.timerMinutes = max(1, min(60, store.timerMinutes + d))
                 Impostazioni.set(store.timerMinutes, .dialTimer)
             } label: {
-                Image(systemName: symbol).font(.system(size: 10, weight: .semibold)).foregroundStyle(Volta.pillT)
+                Image(systemName: symbol).font(.system(size: 10, weight: .medium)).foregroundStyle(Volta.pillT)
                     .frame(width: 30, height: 30).background(Circle().fill(Volta.pill)).contentShape(Circle())
             }
             .buttonStyle(.plain)
@@ -620,7 +620,7 @@ private struct PersonalizzaVista: View {
 
     private func freccia(_ s: String, attiva: Bool, _ a: @escaping () -> Void) -> some View {
         Button(action: { withAnimation(.easeOut(duration: 0.2), a) }) {
-            Image(systemName: s).font(.system(size: 9, weight: .semibold)).foregroundStyle(attiva ? Volta.t2 : Volta.t3.opacity(0.4))
+            Image(systemName: s).font(.system(size: 9, weight: .medium)).foregroundStyle(attiva ? Volta.t2 : Volta.t3.opacity(0.4))
                 .frame(width: 22, height: 22).contentShape(Rectangle())
         }
         .buttonStyle(.plain).disabled(!attiva)

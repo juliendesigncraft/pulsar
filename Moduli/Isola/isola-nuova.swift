@@ -113,7 +113,7 @@ struct VWho: View {
     var body: some View {
         HStack(spacing: 7) {
             Circle().fill(Volta.a2).frame(width: 6, height: 6)
-            Text(project).font(.system(size: 12.5, weight: .medium)).foregroundStyle(Volta.t1).lineLimit(1)
+            Text(project).font(.system(size: 12.5, weight: .regular)).foregroundStyle(Volta.t1).lineLimit(1)
             Text(what).font(.system(size: 12.5)).foregroundStyle(Volta.t2).lineLimit(1).layoutPriority(1)
         }
     }
@@ -174,7 +174,7 @@ struct IslandHead: View {
 
     private func icon(_ s: String, _ help: String, on: Bool = false, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: s).font(.system(size: 10.5, weight: .semibold))
+            Image(systemName: s).font(.system(size: 10.5, weight: .medium))
                 .foregroundStyle(on ? Volta.t1 : Volta.t3)
                 .frame(width: 24, height: 24)
                 .background(Circle().fill(on ? Volta.pill : .clear))
@@ -226,7 +226,7 @@ private struct MusicCard: View {
                             Text(playing ? T("In ascolto", "Now playing") : t == nil ? T("Musica", "Music") : T("In pausa", "Paused"))
                                 .font(.system(size: 12)).foregroundStyle(Volta.t2)
                         }
-                        Text(t?.title ?? T("Niente in riproduzione", "Nothing playing")).font(.system(size: 16, weight: .medium)).foregroundStyle(Volta.t1).lineLimit(1)
+                        Text(t?.title ?? T("Niente in riproduzione", "Nothing playing")).font(.system(size: 16, weight: .regular)).foregroundStyle(Volta.t1).lineLimit(1)
                         if let a = t?.artist, !a.isEmpty { Text(a).font(.system(size: 12.5)).foregroundStyle(Volta.t2).lineLimit(1) }
                         if let tr = media.track, tr.duration > 0 {
                             TimelineView(.periodic(from: .now, by: 1)) { ctx in
@@ -361,7 +361,7 @@ struct DropCard: View {
             HStack(spacing: 18) {
                 Razzo(phase: phase, pixel: 3.6).frame(width: 64, height: 88).clipped()
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(title(toClaude)).font(.system(size: 16, weight: .medium)).foregroundStyle(Volta.t1)
+                    Text(title(toClaude)).font(.system(size: 16, weight: .regular)).foregroundStyle(Volta.t1)
                     if model.dropNote == nil && toClaude {
                         HStack(spacing: 6) {
                             ForEach([T("Immagini", "Images"), "PDF", T("Codice", "Code"), T("Testi", "Text")], id: \.self) { t in

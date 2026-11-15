@@ -72,7 +72,7 @@ struct Pastiglia: View {
         ZStack {
             RoundedRectangle(cornerRadius: 3.2, style: .continuous)
                 .fill(tint ?? Color.primary.opacity(0.85))
-            Image(systemName: symbol).font(.system(size: 7.5, weight: .bold))
+            Image(systemName: symbol).font(.system(size: 7.5, weight: .medium))
                 .foregroundStyle(Theme.light ? Color.white : Color.black)
                 .blendMode(.destinationOut)
         }

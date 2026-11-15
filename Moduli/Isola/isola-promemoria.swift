@@ -92,7 +92,7 @@ struct PromemoriaVista: View {
                 .frame(width: 48, height: 48)
                 VStack(alignment: .leading, spacing: 5) {
                     VWho(project: T("Promemoria", "Reminder"), what: todo.quando.map { T("alle ", "at ") + OraTesto.hm($0) } ?? "")
-                    Text(todo.testo).font(.system(size: 16, weight: .medium)).foregroundStyle(Volta.t1).lineLimit(1).truncationMode(.tail)
+                    Text(todo.testo).font(.system(size: 16, weight: .regular)).foregroundStyle(Volta.t1).lineLimit(1).truncationMode(.tail)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 VPill(title: T("Tra 10 min", "In 10 min"), kind: .normal, action: rimanda)

@@ -105,7 +105,7 @@ private struct TesseraStrumento: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: strumento.simbolo)
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(on ? Volta.primT : Volta.a2)
                 .frame(width: 34, height: 34)
                 .background(Circle().fill(on ? Volta.prim : Volta.card2))
@@ -163,11 +163,11 @@ private struct Documentino: View {
                 .frame(width: 30, height: 36)
             if let sigla {
                 Text(sigla.count > 4 ? String(sigla.prefix(4)) : sigla)
-                    .font(.system(size: sigla.count > 3 ? 7.5 : 8.5, weight: .bold))
+                    .font(.system(size: sigla.count > 3 ? 7.5 : 8.5, weight: .medium))
                     .foregroundStyle(on ? Volta.primT : tenue ? Volta.t2 : Volta.pillT)
                     .offset(y: 3)
             } else if let simbolo {
-                Image(systemName: simbolo).font(.system(size: 12, weight: .medium))
+                Image(systemName: simbolo).font(.system(size: 12, weight: .regular))
                     .foregroundStyle(on ? Volta.primT : Volta.a2).offset(y: 2)
             }
         }
@@ -203,7 +203,7 @@ struct MutaPeekRiga: View {
     @State private var salto = 0
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: item.symbol).font(.system(size: 13, weight: .medium)).foregroundStyle(Volta.a2)
+            Image(systemName: item.symbol).font(.system(size: 13, weight: .regular)).foregroundStyle(Volta.a2)
                 .symbolEffect(.bounce, value: salto)
                 .symbolEffect(.rotate, isActive: item.symbol == "arrow.triangle.2.circlepath")
             Text(item.title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Color.primary).lineLimit(1)
@@ -233,7 +233,7 @@ private struct Icona: View {
     @State private var sopra = false
     var body: some View {
         Button(action: azione) {
-            Image(systemName: simbolo).font(.system(size: 10.5, weight: .semibold))
+            Image(systemName: simbolo).font(.system(size: 10.5, weight: .medium))
                 .foregroundStyle(primaria ? Volta.primT : Volta.a2)
                 .frame(width: 22, height: 20)
                 .background(Capsule().fill(primaria ? Volta.prim : Volta.a2.opacity(sopra ? 0.22 : 0.14)))
@@ -258,7 +258,7 @@ struct MutaSection: View {
                     .frame(width: 34, height: 34).background(Circle().fill(Volta.a2.opacity(0.16)))
                     .symbolEffect(.bounce, value: muta.ultimaVolta)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Stow").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.primary)
+                    Text("Stow").font(.system(size: 15, weight: .regular)).foregroundStyle(Color.primary)
                     Text(muta.riordino ? T("Mette a posto da sola", "Tidies up on its own") : T("Riordino spento", "Tidy is off"))
                         .font(.system(size: 12)).foregroundStyle(Night.t2).lineLimit(1)
                 }
@@ -359,7 +359,7 @@ private struct Cartellina: View {
                     Image(systemName: cestino ? "trash.fill" : "folder.fill").font(.system(size: 30))
                         .foregroundStyle(cestino ? AnyShapeStyle(Night.t3) : AnyShapeStyle(LinearGradient(colors: [Volta.a2, Volta.a3], startPoint: .top, endPoint: .bottom)))
                     if !cestino {
-                        Image(systemName: simbolo).font(.system(size: 11, weight: .semibold)).foregroundStyle(Volta.primT).offset(y: 3)
+                        Image(systemName: simbolo).font(.system(size: 11, weight: .medium)).foregroundStyle(Volta.primT).offset(y: 3)
                     }
                 }
                 .frame(height: 34)
@@ -401,7 +401,7 @@ private struct Scelta: View {
     @Binding var on: Bool
     var body: some View {
         Button { on.toggle() } label: {
-            Image(systemName: simbolo).font(.system(size: 13, weight: .medium))
+            Image(systemName: simbolo).font(.system(size: 13, weight: .regular))
                 .foregroundStyle(on ? Volta.a1 : Night.t3)
                 .frame(width: 34, height: 28)
                 .background(Capsule().fill(on ? Volta.a2.opacity(0.22) : Color.primary.opacity(0.05)))

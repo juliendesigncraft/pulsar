@@ -149,9 +149,9 @@ private struct MessagesTile: View {
     private func chatRow(_ c: ChatPreview, lines: Int, top: Bool) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
-                Text(c.name).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                Text(c.name).font(.system(size: 12, weight: .regular)).lineLimit(1)
                 if c.unread > 0 {
-                    Text("\(c.unread)").font(.system(size: 9, weight: .semibold).monospacedDigit()).foregroundStyle(Night.onProminent)
+                    Text("\(c.unread)").font(.system(size: 9, weight: .medium).monospacedDigit()).foregroundStyle(Night.onProminent)
                         .padding(.horizontal, 5).frame(height: 14).background(Capsule().fill(Night.green))
                 }
                 Spacer(minLength: 4)
@@ -162,7 +162,7 @@ private struct MessagesTile: View {
                     }
                     .buttonStyle(.plain).help(T("Fissa questa chat", "Pin this chat"))
                     Button { next() } label: {
-                        Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(Color.primary.opacity(0.6))
+                        Image(systemName: "chevron.right").font(.system(size: 9, weight: .medium)).foregroundStyle(Color.primary.opacity(0.6))
                     }
                     .buttonStyle(.plain).help(T("Chat successiva", "Next chat"))
                 }

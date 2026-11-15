@@ -342,7 +342,7 @@ private struct RigaPannello: View {
             } label: {
                 HStack(spacing: 10) {
                     icona.frame(width: 18, height: 18)
-                    Text(voce.titolo).font(.system(size: 12.5, weight: .medium)).foregroundStyle(s.t1).lineLimit(1)
+                    Text(voce.titolo).font(.system(size: 12.5, weight: .regular)).foregroundStyle(s.t1).lineLimit(1)
                     Spacer(minLength: 6)
                     if let on = voce.acceso {
                         InterruttorePannello(on: on, s: s)

@@ -28,7 +28,7 @@ struct AgentQuestionCard: View {
                 VStack(alignment: .leading, spacing: 9) {
                     VWho(project: project, what: (item.header.isEmpty ? T("Claude ti fa una domanda", "Claude asks you") : item.header)
                          + (question.items.count > 1 ? "  \(index + 1)/\(question.items.count)" : ""))
-                    Text(item.question).font(.system(size: 16, weight: .medium)).foregroundStyle(Volta.t1)
+                    Text(item.question).font(.system(size: 16, weight: .regular)).foregroundStyle(Volta.t1)
                         .fixedSize(horizontal: false, vertical: true)
                     Flow(spacing: 7) {
                         ForEach(item.options, id: \.label) { o in
@@ -144,9 +144,9 @@ private struct DiffView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(name).font(.system(size: 15, weight: .semibold))
-                Text("+\(add)").font(.system(size: 12, weight: .medium).monospacedDigit()).foregroundStyle(Night.green)
-                Text("\u{2212}\(rem)").font(.system(size: 12, weight: .medium).monospacedDigit()).foregroundStyle(Color.red)
+                Text(name).font(.system(size: 15, weight: .regular))
+                Text("+\(add)").font(.system(size: 12, weight: .regular).monospacedDigit()).foregroundStyle(Night.green)
+                Text("\u{2212}\(rem)").font(.system(size: 12, weight: .regular).monospacedDigit()).foregroundStyle(Color.red)
                 Spacer()
                 Button(T("Apri il file", "Open file")) { NSWorkspace.shared.open(URL(fileURLWithPath: path)) }
                     .buttonStyle(.plain).font(.system(size: 12)).foregroundStyle(Color.primary.opacity(0.6))

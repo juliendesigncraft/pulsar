@@ -280,7 +280,7 @@ private struct MediaExpanded: View {
                 HStack(alignment: .center, spacing: 14) {
                     art.frame(width: 84, height: 84)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(t.title).font(.system(size: 15, weight: .medium)).lineLimit(1)
+                        Text(t.title).font(.system(size: 15, weight: .regular)).lineLimit(1)
                         Text(t.artist).font(.system(size: 12)).foregroundStyle(Color.primary.opacity(0.62)).lineLimit(1)
                         Spacer(minLength: 4)
                         ProgressBar(src: src)
@@ -314,7 +314,7 @@ private struct MediaExpanded: View {
 
     private func button(_ symbol: String, _ size: CGFloat, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: size, weight: .medium)).frame(width: 24, height: 22).contentShape(Rectangle())
+            Image(systemName: symbol).font(.system(size: size, weight: size < 12 ? .medium : .regular)).frame(width: 24, height: 22).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -324,7 +324,7 @@ private struct MediaExpanded: View {
             Image(systemName: "music.note").font(.system(size: 22)).foregroundStyle(Color.primary.opacity(0.45))
             Text(T("Nessuna musica in riproduzione", "Nothing playing")).font(.system(size: 13)).foregroundStyle(Color.primary.opacity(0.6))
             Button { Self.open("Spotify") } label: {
-                Label("Spotify", systemImage: "play.fill").font(.system(size: 12, weight: .medium)).padding(.horizontal, 14).frame(height: 28)
+                Label("Spotify", systemImage: "play.fill").font(.system(size: 12, weight: .regular)).padding(.horizontal, 14).frame(height: 28)
                     .background(Capsule().fill(Color.primary.opacity(0.08)))
             }
             .buttonStyle(.plain)
@@ -334,12 +334,12 @@ private struct MediaExpanded: View {
 
     private var permission: some View {
         VStack(spacing: 10) {
-            Text(T("Pulsar non può controllare Spotify", "Pulsar can't control Spotify")).font(.system(size: 13, weight: .medium)).foregroundStyle(Night.amber)
+            Text(T("Pulsar non può controllare Spotify", "Pulsar can't control Spotify")).font(.system(size: 13, weight: .regular)).foregroundStyle(Night.amber)
             Text(T("Consenti l'Automazione per Pulsar → Spotify.", "Allow Automation for Pulsar → Spotify.")).font(.system(size: 12)).foregroundStyle(Color.primary.opacity(0.6))
             Button {
                 NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation")!)
             } label: {
-                Text(T("Apri Impostazioni", "Open Settings")).font(.system(size: 12, weight: .medium)).padding(.horizontal, 14).frame(height: 28)
+                Text(T("Apri Impostazioni", "Open Settings")).font(.system(size: 12, weight: .regular)).padding(.horizontal, 14).frame(height: 28)
                     .background(Capsule().fill(Color.primary.opacity(0.08)))
             }
             .buttonStyle(.plain)
@@ -394,7 +394,7 @@ struct LyricsLine: View {
             TimelineView(.periodic(from: .now, by: 0.25)) { ctx in
                 let i = LRC.index(at: src.position(at: ctx.date), in: lines)
                 VStack(spacing: 2) {
-                    Text(i.map { lines[$0].text } ?? "…").font(.system(size: 14, weight: .medium)).lineLimit(1)
+                    Text(i.map { lines[$0].text } ?? "…").font(.system(size: 14, weight: .regular)).lineLimit(1)
                     Text((i ?? -1) + 1 < lines.count ? lines[(i ?? -1) + 1].text : " ")
                         .font(.system(size: 12)).foregroundStyle(Color.primary.opacity(0.4)).lineLimit(1)
                 }

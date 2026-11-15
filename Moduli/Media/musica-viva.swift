@@ -174,7 +174,7 @@ struct NowPlayingPage: View {
         }
         .overlay(alignment: .topTrailing) {
             Button(action: close) {
-                Image(systemName: "xmark").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.85))
+                Image(systemName: "xmark").font(.system(size: 13, weight: .regular)).foregroundStyle(.white.opacity(0.85))
                     .frame(width: 38, height: 38).background(Circle().fill(.white.opacity(0.2)))
             }
             .buttonStyle(.plain).padding(.top, 60).padding(.trailing, 48)

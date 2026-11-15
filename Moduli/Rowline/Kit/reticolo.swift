@@ -130,7 +130,7 @@ struct VistaReticolo: View {
         let alta = (larga / m.proporzione).rounded()
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .firstTextBaseline) {
-                Text(m.app).font(.system(size: 17, weight: .semibold)).lineLimit(1)
+                Text(m.app).font(.system(size: 17, weight: .regular)).lineLimit(1)
                 Spacer()
                 Text(T("Griglia", "Grid")).font(.system(size: 12)).foregroundStyle(t.t3)
             }

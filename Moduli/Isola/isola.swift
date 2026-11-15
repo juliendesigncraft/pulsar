@@ -53,7 +53,7 @@ private final class ProvaSource: IslandSource {
     func expandedView() -> AnyView {
         AnyView(
             VStack(alignment: .leading, spacing: 4) {
-                Text("Isola").font(.system(size: 17, weight: .medium))
+                Text("Isola").font(.system(size: 17, weight: .regular))
                 Text(T("Contenuto di prova", "Test content")).font(.system(size: 12)).foregroundStyle(Color.primary.opacity(0.6))
             }
             .frame(maxWidth: .infinity, alignment: .leading)

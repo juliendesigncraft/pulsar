@@ -621,7 +621,7 @@ final class AnimaSource: IslandSource {
     /// Il pannello si misura sul titolo e sul testo veri: largo quanto serve (fra 380 e 600), alto quanto le righe.
     var panelSize: CGSize? {
         let (titolo, testo) = AnimaExpanded.testi(anima.phase)
-        let corpo = NSFont.systemFont(ofSize: 12.5), testa = NSFont.systemFont(ofSize: 13, weight: .medium)
+        let corpo = NSFont.systemFont(ofSize: 12.5), testa = NSFont.systemFont(ofSize: 13, weight: .regular)
         let margini = 2 * (20 + AnimaExpanded.margine)          // il pannello (20) più il margine della Voce
         let larghezzaTesto = ceil((testo as NSString).size(withAttributes: [.font: corpo]).width)
         let larghezzaTitolo = ceil((titolo as NSString).size(withAttributes: [.font: testa]).width) + 28 + 32   // puntini e chiudi
@@ -685,12 +685,12 @@ struct AnimaExpanded: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 AnimaGlyph(anima: anima).frame(width: 18, height: 18)
-                Text(titolo).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                Text(titolo).font(.system(size: 13, weight: .regular)).lineLimit(1)
                 Spacer(minLength: 0)
                 if !piccolo.isEmpty { Text(piccolo).font(.system(size: 11)).foregroundStyle(Color.primary.opacity(0.4)) }
                 if case .risposta = anima.phase {
                     Button { anima.chiudi() } label: {
-                        Image(systemName: "xmark").font(.system(size: 10, weight: .semibold)).foregroundStyle(Color.primary.opacity(0.5))
+                        Image(systemName: "xmark").font(.system(size: 10, weight: .medium)).foregroundStyle(Color.primary.opacity(0.5))
                             .frame(width: 22, height: 22).contentShape(Rectangle())
                     }.buttonStyle(.plain)
                 }

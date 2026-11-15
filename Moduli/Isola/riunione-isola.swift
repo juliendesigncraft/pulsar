@@ -119,7 +119,7 @@ struct RiunioneVista: View {
                 VStack(alignment: .leading, spacing: 5) {
                     VWho(project: T("Riunione", "Meeting"), what: Riunione.quantoManca(inizio: riunione.start, ora: adesso, inglese: !pulsarItalian))
                     Text(riunione.title.isEmpty ? T("Senza titolo", "Untitled") : riunione.title)
-                        .font(.system(size: 16, weight: .medium)).foregroundStyle(Volta.t1)
+                        .font(.system(size: 16, weight: .regular)).foregroundStyle(Volta.t1)
                         .lineLimit(1).truncationMode(.tail)
                     Text(orario).font(.system(size: 12.5).monospacedDigit()).foregroundStyle(Volta.t2).lineLimit(1)
                 }

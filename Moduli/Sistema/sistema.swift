@@ -244,7 +244,7 @@ struct SchedaSistema: View {
             Tessera(s: s) {
                 HStack {
                     Image(systemName: m.batteria?.carica == true ? "battery.100.bolt" : "battery.75").foregroundStyle(s.t2)
-                    Text(T("Batteria", "Battery")).font(.system(size: 12.5, weight: .medium)).foregroundStyle(s.t1)
+                    Text(T("Batteria", "Battery")).font(.system(size: 12.5, weight: .regular)).foregroundStyle(s.t1)
                     Spacer()
                     Text(m.batteria.map { "\($0.percento)%" } ?? "—").font(.system(size: 12.5).monospacedDigit()).foregroundStyle(s.t1)
                     Text(m.tempBatteria.map { String(format: "%.0f °C", $0) } ?? "").font(.system(size: 11.5).monospacedDigit()).foregroundStyle(s.t2)
@@ -257,7 +257,7 @@ struct SchedaSistema: View {
     private func riga(_ nome: String, _ v: [Double], extra: String? = nil) -> some View {
         Tessera(s: s) {
             HStack(alignment: .firstTextBaseline) {
-                Text(nome).font(.system(size: 12.5, weight: .medium)).foregroundStyle(s.t1)
+                Text(nome).font(.system(size: 12.5, weight: .regular)).foregroundStyle(s.t1)
                 if let e = extra { Text(e).font(.system(size: 11)).foregroundStyle(s.t2) }
                 Spacer()
                 Text(percento(v.last)).font(.system(size: 12.5).monospacedDigit()).foregroundStyle(s.t1)
@@ -290,7 +290,7 @@ struct SchedaRete: View {
             }
             Tessera(s: s) {
                 HStack {
-                    Text(T("Prova di velocità", "Speed test")).font(.system(size: 12.5, weight: .medium)).foregroundStyle(s.t1)
+                    Text(T("Prova di velocità", "Speed test")).font(.system(size: 12.5, weight: .regular)).foregroundStyle(s.t1)
                     Spacer()
                     switch m.prova {
                     case .ferma, .errore:
@@ -315,9 +315,9 @@ struct SchedaRete: View {
     }
     private func velocita(_ simbolo: String, _ valore: String, _ nome: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 5) {
-            Image(systemName: simbolo).font(.system(size: 11, weight: .semibold)).foregroundStyle(s.t2)
+            Image(systemName: simbolo).font(.system(size: 11, weight: .medium)).foregroundStyle(s.t2)
             VStack(alignment: .leading, spacing: 1) {
-                Text(valore).font(.system(size: 15, weight: .medium).monospacedDigit()).foregroundStyle(s.t1)
+                Text(valore).font(.system(size: 15, weight: .regular).monospacedDigit()).foregroundStyle(s.t1)
                 Text(nome).font(.system(size: 10.5)).foregroundStyle(s.t2)
             }
         }

@@ -184,12 +184,12 @@ struct LiveWindowSection: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(T("Finestra", "Window")).font(.system(size: 15, weight: .semibold))
+                    Text(T("Finestra", "Window")).font(.system(size: 15, weight: .regular))
                     Text(T("Guarda un'altra app qui dentro", "Watch another app in here")).font(.system(size: 12)).foregroundStyle(Night.t2)
                 }
                 Spacer()
                 Button { live.refresh() } label: {
-                    Image(systemName: "arrow.clockwise").font(.system(size: 11, weight: .semibold)).foregroundStyle(Night.t2)
+                    Image(systemName: "arrow.clockwise").font(.system(size: 11, weight: .medium)).foregroundStyle(Night.t2)
                         .frame(width: 26, height: 26).background(Circle().fill(Color.primary.opacity(0.07)))
                 }
                 .buttonStyle(.plain).help(T("Aggiorna", "Refresh"))
@@ -215,7 +215,7 @@ struct LiveWindowSection: View {
         HStack(spacing: 10) {
             Image(nsImage: icon(w.bundle)).resizable().frame(width: 22, height: 22)
             VStack(alignment: .leading, spacing: 2) {
-                Text(w.title).font(.system(size: 13, weight: .medium)).lineLimit(1).truncationMode(.middle)
+                Text(w.title).font(.system(size: 13, weight: .regular)).lineLimit(1).truncationMode(.middle)
                 Text(w.app).font(.system(size: 11.5)).foregroundStyle(Night.t2).lineLimit(1)
             }
             Spacer(minLength: 4)
@@ -241,17 +241,17 @@ struct LiveWindowSection: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Button { live.close() } label: {
-                    Image(systemName: "chevron.left").font(.system(size: 11, weight: .semibold)).foregroundStyle(Night.t2)
+                    Image(systemName: "chevron.left").font(.system(size: 11, weight: .medium)).foregroundStyle(Night.t2)
                         .frame(width: 26, height: 26).background(Circle().fill(Color.primary.opacity(0.07)))
                 }
                 .buttonStyle(.plain).help(T("Altre finestre", "Other windows"))
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(c.title).font(.system(size: 13, weight: .semibold)).lineLimit(1).truncationMode(.middle)
+                    Text(c.title).font(.system(size: 13, weight: .regular)).lineLimit(1).truncationMode(.middle)
                     Text(c.app).font(.system(size: 11.5)).foregroundStyle(Night.t2).lineLimit(1)
                 }
                 Spacer(minLength: 4)
                 Button { live.raise() } label: {
-                    Image(systemName: "arrow.up.forward.app").font(.system(size: 11, weight: .semibold)).foregroundStyle(Night.t2)
+                    Image(systemName: "arrow.up.forward.app").font(.system(size: 11, weight: .medium)).foregroundStyle(Night.t2)
                         .frame(width: 26, height: 26).background(Circle().fill(Color.primary.opacity(0.07)))
                 }
                 .buttonStyle(.plain).help(T("Apri la finestra", "Bring the window forward"))
@@ -304,7 +304,7 @@ struct LiveWindowSection: View {
 
     private func zoomButton(_ symbol: String, _ f: @escaping () -> Void) -> some View {
         Button { withAnimation(.easeOut(duration: 0.2)) { f() } } label: {
-            Image(systemName: symbol).font(.system(size: 10.5, weight: .bold)).foregroundStyle(Night.t2)
+            Image(systemName: symbol).font(.system(size: 10.5, weight: .medium)).foregroundStyle(Night.t2)
                 .frame(width: 26, height: 26).background(Circle().fill(Color.primary.opacity(0.07)))
         }
         .buttonStyle(.plain)

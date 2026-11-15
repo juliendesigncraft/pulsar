@@ -128,7 +128,7 @@ private struct WindowTile: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .overlay(alignment: .topTrailing) {
                         Button { thumb.cycle() } label: {
-                            Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 10, weight: .semibold)).foregroundStyle(.white)
+                            Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 10, weight: .medium)).foregroundStyle(.white)
                                 .frame(width: 20, height: 20).background(Circle().fill(Color.black.opacity(0.55)))
                         }
                         .buttonStyle(.plain)

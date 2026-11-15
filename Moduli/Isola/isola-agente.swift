@@ -78,7 +78,7 @@ private struct AgentStepIcon: View {
             // 17/10: file trascinati che aspettano il prossimo messaggio: graffetta e numero, finché Claude non li prende
             if store.contextCount > 0 {
                 HStack(spacing: 2) {
-                    Image(systemName: "paperclip").font(.system(size: 10, weight: .semibold))
+                    Image(systemName: "paperclip").font(.system(size: 10, weight: .medium))
                     Text("\(store.contextCount)").font(.system(size: 10.5, weight: .medium).monospacedDigit())
                 }
                 .foregroundStyle(Color.white.opacity(0.85))
@@ -163,7 +163,7 @@ private struct AgentAlertView: View {
                         Razzo(phase: .thrust, pixel: 3.6).frame(width: 64, height: 88)
                         VStack(alignment: .leading, spacing: 8) {
                             VWho(project: s.name, what: T("consentito", "allowed"))
-                            Text(PillText.of(s).main).font(.system(size: 16, weight: .medium)).foregroundStyle(Volta.t1).lineLimit(1)
+                            Text(PillText.of(s).main).font(.system(size: 16, weight: .regular)).foregroundStyle(Volta.t1).lineLimit(1)
                         }
                     }
                 }
@@ -174,7 +174,7 @@ private struct AgentAlertView: View {
                         VStack(alignment: .leading, spacing: 9) {
                             VWho(project: s.name, what: T("Claude ha finito in \(AgentLook.duration(s))", "Claude finished in \(AgentLook.duration(s))"))
                             Text(Self.firstSentence(s.summary) ?? (s.files.isEmpty ? T("Fatto, nessun file cambiato", "Done, nothing changed") : T("Fatto", "Done")))
-                                .font(.system(size: 16, weight: .medium)).foregroundStyle(Volta.t1).lineLimit(1)
+                                .font(.system(size: 16, weight: .regular)).foregroundStyle(Volta.t1).lineLimit(1)
                             if !s.changeList.isEmpty {
                                 HStack(spacing: 6) {
                                     ForEach(s.changeList.prefix(3), id: \.path) { c in ChangeRow(path: c.path, change: c.change) { DiffWindow.open(store: store, session: s, path: c.path) } }

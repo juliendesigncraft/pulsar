@@ -372,7 +372,7 @@ struct PeekView: View {
                     // a sinistra e il sottotitolo oltre il bordo destro. Ora margini veri dentro la forma, la larghezza la
                     // misura width(_:notch:) sul testo vero, e oltre il massimo si tronca coi puntini, prima il sottotitolo.
                     HStack(spacing: Self.stacco) {
-                        Image(systemName: item.symbol).font(.system(size: 12, weight: .medium))
+                        Image(systemName: item.symbol).font(.system(size: 12, weight: .regular))
                             .foregroundStyle(tint).symbolRenderingMode(.hierarchical)
                             .frame(width: Self.icona)
                         Text(item.title).font(.system(size: 11.5, weight: .medium)).lineLimit(1).truncationMode(.tail)

@@ -379,7 +379,7 @@ private struct FullPlayerView: View {
             }
             .overlay(alignment: .topTrailing) {
                 Button(action: close) {
-                    Image(systemName: "xmark").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.8))
+                    Image(systemName: "xmark").font(.system(size: 13, weight: .regular)).foregroundStyle(.white.opacity(0.8))
                         .frame(width: 34, height: 34).background(Circle().fill(.white.opacity(0.12)))
                 }
                 .buttonStyle(.plain).padding(28)
