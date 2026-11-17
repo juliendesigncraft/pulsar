@@ -844,7 +844,11 @@ private struct PanelSurface<S: Shape>: ViewModifier {
     let mode: AgentMode
     let shape: S
     func body(content: Content) -> some View {
-        if mode.scuroPieno {
+        if mode.scuroPieno && Impostazioni.bool(.vetroPannelli) {
+            // 16/11, lingua vetro 27: il vetro vero di macOS (segue il cursore Chiaro/Tinto), tinto del nostro scuro.
+            // Prima era un gradiente all'80% sopra una sfocatura: il vetro quasi non si vedeva.
+            content.glassEffect(.regular.tint(Color(red: 0x0F/255, green: 0x0D/255, blue: 0x10/255).opacity(0.36)), in: shape)   // 16/11 notte: nero Carbone #0F0D10, meno grigio   // 16/11 sera: 45% → 28%, "alzalo"
+        } else if mode.scuroPieno {
             content
                 // 12/11: con "Effetto vetro" acceso il pannello lascia passare un po' di quello che c'è dietro (NightBlur sotto)
                 .background(LinearGradient(colors: [Night.top.opacity(Impostazioni.bool(.vetroPannelli) ? 0.78 : 0.985), Night.bottom.opacity(Impostazioni.bool(.vetroPannelli) ? 0.82 : 0.99)], startPoint: .top, endPoint: .bottom))   // opaco: niente vetro lucido

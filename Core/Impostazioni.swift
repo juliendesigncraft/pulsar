@@ -32,6 +32,7 @@ enum Chiave: String, CaseIterable {
     case barraDevVoci          // [branch, server, limite: Bool], tutte accese se mancano
     case askedScreenRecording   // fase 3: la richiesta di Registrazione schermo è già stata mostrata (macOS non la ripete)
     case barCollapsed
+    case barraQuandoRegistri  // 16/11: la Barra pulita si accende da sola solo mentre si registra lo schermo (barra-registrazione.swift)
     case dialEnabled
     case mutaAcceso, mutaRiordino, mutaScrivania, mutaDownload, mutaDopoConversione, mutaAttesa, mutaDal, mutaCartelle   // 19/10: Muta
     case dialGains
@@ -64,6 +65,7 @@ enum Chiave: String, CaseIterable {
     case lanciatoriStash
     case lanciatoriScrivania
     case lanciatoriScrivaniaPos
+    case lanciatoriScrivaniaForma  // 16/11: pieno (di serie), compatto o icona (LanciatoriDesktop.Forma)
     case isolaBlocco          // 31/10: il testo della card Nota nella scheda Oggi
     case isolaOggiOrdine      // 31/10: ordine delle card di Lavoro (scheda Oggi)
     case isolaOggiNascoste    // 31/10: card di Lavoro spente
@@ -104,6 +106,7 @@ enum Chiave: String, CaseIterable {
     case utilitaAcceso        // 13/11: il modulo Utilità (Moduli/Utilita), spento di serie
     case utilChiudiEsci, utilTagliaIncolla, utilTestoSemplice, utilPulisciLink, utilBloccaMusica   // 13/11: le sue funzioni, spente
     case isolaMinimal         // 13/11: il notch Minimal (Moduli/Isola/isola-minimal.swift), spento se mancante
+    case isolaOrologioVia1    // 15/11: l'orologio esce dalla fila una volta sola (spento di serie, si riaccende da Impostazioni → Isola)
     case inputAcceso          // 13/11: Mouse e tastiera (Moduli/Input), spento di serie
     case inSnippet, inSuperTasto, inClicCentrale, inRimbalzo, inTastiLaterali, inScorrimento, inFuoco   // 13/11: le sue funzioni, spente
     case sistemaAcceso        // 13/11: Sistema, Rete e Manutenzione nel pannello (Moduli/Sistema), spento di serie

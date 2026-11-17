@@ -334,6 +334,12 @@ final class DialStore: ObservableObject {
             if caValue(obj, kAudioProcessPropertyIsRunningInput, kAudioObjectPropertyScopeGlobal, UInt32(0)) != 0 { g.inCall = true }
             groups[id] = g
         }
+        // 16/11, l'autore: "i suoni della tastiera sono belli ma troppo forti" e nel mixer Pulsar non c'era più. Torna come riga
+        // senza processi, quindi senza tap (il problema del 09/11 non si ripresenta): il suo cursore lo legge KeySounds e
+        // moltiplica il volume dei suoni di tastiera e mouse (KeySounds.guadagnoMixer). Sempre in lista finché i suoni sono accesi.
+        if Impostazioni.bool(.soundsEnabled), let mio = Bundle.main.bundleIdentifier {
+            groups[mio] = MixApp(id: mio, name: "Pulsar", icon: NSApp.applicationIconImage, processes: [], playing: true)
+        }
         // in lista: chi suona adesso, più chi ha un volume diverso dal 100% (così il cursore non sparisce in pausa)
         let shown = groups.values
             .filter { $0.playing || gain($0.id) != 1 || taps[$0.id] != nil }

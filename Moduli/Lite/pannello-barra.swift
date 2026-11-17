@@ -201,7 +201,14 @@ final class PannelloBarra: NSObject, NSPopoverDelegate {
         cornice.wantsLayer = true
         // 12/11, l'autore: "gli effetti vetro sui menu, se sono attivati". Acceso: il fondo del tema al 72% sopra il vetro di macOS.
         let vetro = Impostazioni.bool(.vetroPannelli)
-        cornice.layer?.backgroundColor = NSColor(Volta.Scala(chiaro: Theme.light).body).withAlphaComponent(vetro ? 0.72 : 1).cgColor
+        // 16/11, l'autore: "il glass effect è molto scarso". Col 72% il vetro non si vedeva. Lingua vetro 27: la cornice
+        // è vetro tinto (velo al 38%, il popover su macOS 27 è già Liquid Glass e segue il cursore Chiaro/Tinto del sistema),
+        // le righe restano piene (s.card) per leggere bene.
+        // 16/11 notte, l'autore: "il glass ci sta molto, mi piace, ma quel nero/grigio è un po' meno Carbon": il vetro di sistema
+        // schiarisce il 20% di #121013 verso il grigio. Al vetro scuro si dà il nero più scuro di Carbone (#0F0D10) al 34%.
+        let tinta = Theme.light ? NSColor(Volta.Scala(chiaro: true).body).withAlphaComponent(vetro ? 0.2 : 1)
+                                : (vetro ? NSColor(srgbRed: 0x0F/255, green: 0x0D/255, blue: 0x10/255, alpha: 0.34) : NSColor(Volta.Scala(chiaro: false).body))
+        cornice.layer?.backgroundColor = tinta.cgColor   // 16/11 sera, l'autore: "il vetro è ancora poco, alzalo": 38% → 20%
         stato.vetro = vetro
     }
 
@@ -288,7 +295,7 @@ struct VistaPannello: View {
             }
         }
         .padding(4)
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(s.card.opacity(0.6)))
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(s.card.opacity(Impostazioni.bool(.vetroPannelli) ? 0.45 : 0.6)))
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Color.white.opacity(chiaro ? 0 : 0.06), lineWidth: 1))
         .padding(.horizontal, 12)
     }
@@ -353,7 +360,7 @@ private struct RigaPannello: View {
                     }
                 }
                 .padding(.horizontal, 10).frame(height: 36)
-                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(sopra ? s.card2 : s.card))
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill((sopra ? s.card2 : s.card).opacity(Impostazioni.bool(.vetroPannelli) ? 0.86 : 1)))   // righe quasi piene: si legge, ma il vetro si sente
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Color.white.opacity(s.chiaro ? 0 : 0.06), lineWidth: 1))
                 .contentShape(Rectangle())
             }

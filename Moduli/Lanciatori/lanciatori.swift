@@ -1120,6 +1120,7 @@ final class LanciatoriDesktop {
         }
         win = w
         cambi = Lanciatori.shared.objectWillChange.sink { [weak self] in DispatchQueue.main.async { self?.misura() } }
+        seguiForma()
         w.orderFrontRegardless()
         Ombra.segui(w)
     }
@@ -1133,22 +1134,154 @@ final class LanciatoriDesktop {
 
     func ferma() {
         if let spostato { NotificationCenter.default.removeObserver(spostato) }
-        win?.orderOut(nil); win = nil; spostato = nil; cambi = nil
+        if let fuori { NSEvent.removeMonitor(fuori) }
+        win?.orderOut(nil); win = nil; spostato = nil; cambi = nil; formaCambi = nil; fuori = nil
+    }
+
+    // MARK: forma (16/11, l'autore: "nascondere e ridurre ad icona o rimpicciolire il più possibile")
+    // Pieno resta di serie per chi installa ("per i miei gusti"); compatto e icona sono scelte in più, ricordate tra un riavvio e l'altro.
+    enum Forma: String, CaseIterable {
+        case pieno, compatto, icona
+        var titolo: String {
+            switch self {
+            case .pieno: return T("Pieno", "Full")
+            case .compatto: return T("Compatto", "Compact")
+            case .icona: return T("Icona", "Icon")
+            }
+        }
+    }
+    final class StatoForma: ObservableObject {
+        @Published var forma: Forma = Forma(rawValue: Impostazioni.string(.lanciatoriScrivaniaForma) ?? "") ?? .pieno {
+            didSet { Impostazioni.set(forma.rawValue, .lanciatoriScrivaniaForma); aperta = false }
+        }
+        /// In forma icona: il riquadro pieno aperto con un clic sull'icona (un clic fuori lo richiude).
+        @Published var aperta = false
+        /// In forma compatta: la cartella scelta coi puntini.
+        @Published var scelta: String?
+    }
+    let stato = StatoForma()
+    private var formaCambi: Any?
+    private var fuori: Any?
+
+    var forma: Forma {
+        get { stato.forma }
+        set { stato.forma = newValue }
+    }
+    /// 17/11, l'autore: "basta che la rendi mobile". L'icona è tutta un bottone e la finestra non si trascinava dal fondo:
+    /// si sposta a mano seguendo il mouse sullo schermo. La nuova posizione la salva l'osservatore di didMove.
+    private var dragInizio: (mouse: NSPoint, origine: NSPoint)?
+    func trascina(fine: Bool = false) {
+        guard let w = win else { return }
+        if fine { dragInizio = nil; return }
+        let m = NSEvent.mouseLocation
+        if dragInizio == nil { dragInizio = (m, w.frame.origin) }
+        guard let d = dragInizio else { return }
+        w.setFrameOrigin(NSPoint(x: d.origine.x + m.x - d.mouse.x, y: d.origine.y + m.y - d.mouse.y))
+    }
+    var gestoSposta: some Gesture {
+        DragGesture(minimumDistance: 3, coordinateSpace: .global)
+            .onChanged { _ in LanciatoriDesktop.shared.trascina() }
+            .onEnded { _ in LanciatoriDesktop.shared.trascina(fine: true) }
+    }
+
+    /// La voce del menu: passa alla forma dopo.
+    func formaSeguente() {
+        let tutte = Forma.allCases
+        forma = tutte[((tutte.firstIndex(of: forma) ?? 0) + 1) % tutte.count]
+    }
+
+    /// Ogni cambio di forma rimisura la finestra; aperta dall'icona, un clic fuori la richiude.
+    fileprivate func seguiForma() {
+        formaCambi = stato.objectWillChange.sink { [weak self] in DispatchQueue.main.async { self?.misura() } }
+        fuori = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            guard let self, self.stato.aperta, let w = self.win, !w.frame.contains(NSEvent.mouseLocation) else { return }
+            DispatchQueue.main.async { self.stato.aperta = false }
+        }
     }
 }
 
 private struct DesktopVista: View {
     @ObservedObject var look = GhieraLook.shared
     @ObservedObject var dock: Lanciatori = .shared
+    @ObservedObject var stato = LanciatoriDesktop.shared.stato
+    @State private var sopraPieno = false
+
     var body: some View {
+        Group {
+            switch stato.forma {
+            case .pieno: pieno
+            case .compatto: compatto
+            case .icona: if stato.aperta { pieno } else { icona }
+            }
+        }
+        .environment(\.colorScheme, look.mode.scheme)
+        .id(look.mode.rawValue)
+        .fixedSize()
+    }
+
+    private var cartelle: [Lanciatori.Cartella] { dock.scrivania.isEmpty ? dock.cartelle : dock.scrivania }
+
+    /// Com'era fino al 15/11, più il trattino che compare al passaggio: riduce a icona.
+    private var pieno: some View {
+        griglia
+            .overlay(alignment: .topTrailing) {
+                Button { withAnimation(.easeOut(duration: 0.25)) { stato.forma = .icona } } label: {
+                    Capsule().fill(Volta.t1).frame(width: 8, height: 1.5)
+                        .frame(width: 20, height: 20)
+                        .background(Circle().fill(Volta.pill))
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help(T("Riduci a icona", "Shrink to icon"))
+                .padding(10)
+                .opacity(sopraPieno && stato.forma != .icona ? 1 : 0)
+                .allowsHitTesting(stato.forma != .icona)
+            }
+            .onHover { d in withAnimation(.easeOut(duration: 0.18)) { sopraPieno = d } }
+    }
+
+    /// Una riga sola, cerchi da 30 pt; i puntini a sinistra cambiano cartella (App, Design).
+    private var compatto: some View {
+        let scelta = cartelle.first { $0.id == stato.scelta } ?? cartelle.first
+        return HStack(spacing: 6) {
+            if cartelle.count > 1 {
+                VStack(spacing: 5) {
+                    ForEach(cartelle) { c in
+                        Circle().fill(c.id == scelta?.id ? Volta.t1 : Volta.t3).frame(width: 5, height: 5)
+                            .frame(width: 12, height: 12).contentShape(Rectangle())
+                            .onTapGesture { withAnimation(.easeOut(duration: 0.2)) { stato.scelta = c.id } }
+                            .help(c.titolo)
+                    }
+                }
+            }
+            ForEach(Array((scelta?.voci ?? []).prefix(10))) { v in
+                Cerchio(dock: dock, voce: v, lato: 30, sopra: .constant(nil), esciDaSolo: true)
+            }
+        }
+        .padding(8)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Volta.body))
+        .gesture(LanciatoriDesktop.shared.gestoSposta)      // 17/11: si trascina anche dai puntini e dal bordo
+    }
+
+    /// Solo un bottone tondo: un clic apre il riquadro pieno, tenendo premuto e muovendo si sposta.
+    private var icona: some View {
+        LazyVGrid(columns: [GridItem(.fixed(8), spacing: 4), GridItem(.fixed(8), spacing: 4)], spacing: 4) {
+            ForEach(0..<4, id: \.self) { _ in RoundedRectangle(cornerRadius: 3, style: .continuous).fill(Volta.t1.opacity(0.8)).frame(width: 8, height: 8) }
+        }
+        .frame(width: 44, height: 44)
+        .background(Circle().fill(Volta.body))
+        .contentShape(Circle())
+        .gesture(LanciatoriDesktop.shared.gestoSposta)
+        .onTapGesture { withAnimation(.easeOut(duration: 0.25)) { stato.aperta = true } }
+        .help(T("Lanciatori", "Launchers"))
+    }
+
+    private var griglia: some View {
         // 25/10: giochi e Learn stanno già nello stash in basso: se la fonte dà cartelle sue (le app), il riquadro mostra quelle
         LanciatoriGriglia(cartelleFisse: dock.scrivania.isEmpty ? nil : dock.scrivania)
             .padding(18)
             // 13/11 sera, l'autore: "il launchbar ha uno sfondo diverso da quello della scrivania, sul bianco è grigio".
             // 13/11 notte: tolto per errore (l'autore parlava della griglia ⌘4) e rimesso com'era: "perché non c'è più il rettangolo attorno?"
             .background(RoundedRectangle(cornerRadius: 28, style: .continuous).fill(Volta.body))
-            .environment(\.colorScheme, look.mode.scheme)
-            .id(look.mode.rawValue)
-            .fixedSize()
     }
 }

@@ -442,7 +442,11 @@ final class IslandModule {
         }
         if !Impostazioni.bool(.isolaBraun1) {           // 14/10: orologio e mese entrano nella riga una volta
             Impostazioni.set(true, .isolaBraun1)
-            model.tiles.layout.add("clock", cells: 1); model.tiles.layout.add("month", cells: 1)
+            model.tiles.layout.add("month", cells: 1)     // 15/11: l'orologio non entra più di serie
+        }
+        if !Impostazioni.bool(.isolaOrologioVia1) {       // 15/11, l'autore: "dell'orologio non se ne fa nulla". Una volta sola:
+            Impostazioni.set(true, .isolaOrologioVia1)     // chi lo riaccende da Impostazioni → Isola se lo tiene
+            model.tiles.layout.remove("clock")
         }
         if !Impostazioni.bool(.isolaPrioritaLarga) {      // la priorità respira su tre celle
             Impostazioni.set(true, .isolaPrioritaLarga)

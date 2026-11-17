@@ -26,6 +26,11 @@ struct PaginaBarra: View {
                                  valore: { Impostazioni.bool(.barCollapsed) }) { acceso in
                     if acceso != Impostazioni.bool(.barCollapsed) { FinestraImpostazioni.shared.alternaBarraPulita() }
                 }
+                // 16/11: la stessa chiave della tessera in Rapidi; il controllo ogni secondo sta in AppDelegate.osservaRegistrazione
+                RigaInterruttore(T("Barra pulita quando registri", "Clean bar while recording"),
+                                 sotto: T("Nasconde le icone solo mentre registri o condividi lo schermo",
+                                          "Hides icons only while you record or share your screen"),
+                                 valore: { BarraRegistrazione.acceso }) { BarraRegistrazione.acceso = $0 }
             }
             GruppoImpostazioni(T("Scrivania", "Desktop")) {
                 RigaScelta(T("Quante mostrarne", "How many to show"),

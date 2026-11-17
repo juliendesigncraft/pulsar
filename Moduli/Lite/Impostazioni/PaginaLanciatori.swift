@@ -51,6 +51,12 @@ struct PaginaLanciatori: View {
                     RigaInterruttore(T("Sul desktop", "On the desktop"), valore: { LanciatoriDesktop.shared.acceso }) {
                         LanciatoriDesktop.shared.acceso = $0
                     }
+                    // 16/11: la forma del riquadro sul desktop (pieno di serie)
+                    RigaScelta(T("Forma sul desktop", "Shape on the desktop"),
+                               opzioni: LanciatoriDesktop.Forma.allCases.map { (id: $0.rawValue, titolo: $0.titolo) },
+                               valore: { LanciatoriDesktop.shared.forma.rawValue }) { raw in
+                        if let f = LanciatoriDesktop.Forma(rawValue: raw) { LanciatoriDesktop.shared.forma = f }
+                    }
                 }
                 GruppoImpostazioni(T("Siti", "Sites")) {
                     pillole

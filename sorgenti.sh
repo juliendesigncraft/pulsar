@@ -14,7 +14,7 @@ MODULI=(
   Moduli/Input/input-logica.swift Moduli/Input/input.swift Moduli/Lite/Impostazioni/PaginaInput.swift
   Moduli/Sistema/sistema-logica.swift Moduli/Sistema/sistema.swift Moduli/Sistema/manutenzione.swift Moduli/Lite/Impostazioni/PaginaSistema.swift
   Moduli/Utilita/utilita-logica.swift Moduli/Utilita/utilita.swift Moduli/Lite/Impostazioni/PaginaUtilita.swift
-  Moduli/Lite/nothing.swift Moduli/Lite/pannello-barra.swift Moduli/Lite/avvio.swift Moduli/Lite/barra-guardia.swift Moduli/Media/musica-led.swift Moduli/Widget/widget-braun.swift
+  Moduli/Lite/nothing.swift Moduli/Lite/pannello-barra.swift Moduli/Lite/avvio.swift Moduli/Lite/barra-guardia.swift Moduli/Lite/barra-registrazione.swift Moduli/Media/musica-led.swift Moduli/Widget/widget-braun.swift
   Moduli/Lite/Impostazioni/MattoniImpostazioni.swift Moduli/Lite/Impostazioni/FinestraImpostazioni.swift Moduli/Lite/Impostazioni/PaginaGenerale.swift
   Moduli/Lite/Impostazioni/PaginaPermessi.swift Moduli/Lite/Impostazioni/PaginaLicenza.swift Moduli/Lite/Impostazioni/PaginaScorciatoie.swift
   Moduli/Lite/Impostazioni/PaginaInfo.swift Moduli/Lite/Impostazioni/PaginaBarra.swift Moduli/Lite/Impostazioni/PaginaSuoni.swift

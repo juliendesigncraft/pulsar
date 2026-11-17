@@ -39,6 +39,9 @@ struct PaginaIsola: View {
                                 WeatherModel.shared.askCity()
                             }
                         }
+                        if let isola = Self.i, !isola.model.widgets.isEmpty {
+                            GruppoTessere(tiles: isola.model.tiles, widgets: isola.model.widgets)
+                        }
                         GruppoImpostazioni(T("Comparse", "Peeks")) {
                             RigaInterruttore(T("Notifiche e Non disturbare", "Notifications and Focus"), valore: { PeekPrefs.notifications }) { PeekPrefs.notifications = $0 }
                             RigaInterruttore(T("Batteria e salute del Mac", "Battery and Mac health"), valore: { PeekPrefs.system }) { PeekPrefs.system = $0 }
@@ -63,5 +66,60 @@ struct PaginaIsola: View {
                 } }
             }
         }
+    }
+}
+
+/// 15/11, l'autore: "togliere o aggiungere widget a scelta". La fila della scheda Tessere del notch, da qui:
+/// accese in alto nell'ordine della fila (frecce per spostarle), spente sotto. Legge e scrive lo stesso TileModel
+/// del tasto Personalizza nel notch (UserDefaults `isolaTiles`): un solo elenco, quello che cambia qui cambia anche lì.
+/// Essere nell'elenco vuol dire accesa: una tessera spenta esce dalla fila e la fila si richiude da sola.
+struct GruppoTessere: View {
+    @ObservedObject var tiles: TileModel
+    let widgets: [IslandWidget]
+    @Environment(\.matte) private var m
+
+    /// Le celle con cui una tessera rientra: quelle tonde stanno in una, musica e priorità respirano su tre.
+    static func celle(_ id: String) -> Int {
+        switch id {
+        case "clock", "month", "sun", "timer": return 1
+        case "music", "todo": return 3
+        default: return 2
+        }
+    }
+
+    private var accese: [(Tile, IslandWidget)] {
+        tiles.layout.tiles.compactMap { t in widgets.first { $0.id == t.id }.map { (t, $0) } }
+    }
+    private var spente: [IslandWidget] {
+        widgets.filter { w in !tiles.layout.tiles.contains { $0.id == w.id } }
+    }
+
+    var body: some View {
+        GruppoImpostazioni(T("Tessere del notch", "Notch tiles")) {
+            ForEach(Array(accese.enumerated()), id: \.element.0.id) { i, coppia in
+                RigaBase(titolo: coppia.1.title, simbolo: coppia.1.symbol) {
+                    HStack(spacing: 2) {
+                        mossa("chevron.up", T("Sposta a sinistra", "Move left"), attiva: i > 0) { tiles.layout.move(coppia.0.id, to: i - 1) }
+                        mossa("chevron.down", T("Sposta a destra", "Move right"), attiva: i < accese.count - 1) { tiles.layout.move(coppia.0.id, to: i + 1) }
+                        Interruttore(acceso: true) { tiles.layout.remove(coppia.0.id) }.padding(.leading, 6)
+                    }
+                }
+            }
+            ForEach(spente, id: \.id) { w in
+                RigaBase(titolo: w.title, simbolo: w.symbol) {
+                    Interruttore(acceso: false) { tiles.layout.add(w.id, cells: Self.celle(w.id)) }
+                }
+            }
+        }
+    }
+
+    private func mossa(_ simbolo: String, _ aiuto: String, attiva: Bool, _ fai: @escaping () -> Void) -> some View {
+        Button(action: fai) {
+            Image(systemName: simbolo).font(.system(size: 11)).foregroundStyle(m.t2)
+                .frame(width: 24, height: 24).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!attiva).opacity(attiva ? 1 : 0.3)
+        .help(aiuto)
     }
 }

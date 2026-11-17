@@ -44,7 +44,10 @@ I built Pulsar with Claude. I designed every part, Claude wrote the Swift with m
 - Rowline: your windows side by side in a row that scrolls (⌃⌥⌘F)
 - Voice: hold ⌃⌥ to dictate, ⌃⌘ to give a command, ⌃⇧ to circle something and ask
 - Three themes: Dark Matte, White Matte and Carbone (near black, with your macOS accent color), for Pulsar and,
-  if you want, macOS, the wallpaper and the folders you pick; an optional glass effect on the panels
+  if you want, macOS, the wallpaper and the folders you pick; an optional glass effect on the panels.
+  The same Carbone for the Claude desktop app lives in its own repo: [carbon-theme-for-claude](https://github.com/juliendesigncraft/carbon-theme-for-claude)
+- Notch widgets you choose: add or remove each one from Settings
+- Launchers on the desktop in three shapes (full, compact, a single icon you can drag anywhere)
 - A Minimal notch you can switch to any time: small icons, one row of four tiles (music, weather, next event, timer) and the lyrics; the Claude Code panel turns minimal with it
 - A short hello in the notch when Pulsar starts (you can turn it off)
 

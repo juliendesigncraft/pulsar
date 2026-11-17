@@ -134,6 +134,11 @@ final class KeySounds {
         for c in 0..<Int(b.format.channelCount) { for i in 0..<n { ch[c][i] = tanh(k * ch[c][i] / peak) * norm } }
     }
     static let mouseTrim: Float = 0.62                   // il mouse un gradino sotto la tastiera
+    /// 16/11: il cursore di Pulsar nel Mixer (dialGains, chiave = il bundle di Pulsar). Senza tap: lo applica Pulsar ai suoi suoni.
+    static var guadagnoMixer: Float {
+        guard let id = Bundle.main.bundleIdentifier, let g = (Impostazioni.dictionary(.dialGains) as? [String: Float])?[id] else { return 1 }
+        return max(0, min(1, g))
+    }
     private let limiter = AVAudioUnitEffect(audioComponentDescription: AudioComponentDescription(
         componentType: kAudioUnitType_Effect, componentSubType: kAudioUnitSubType_PeakLimiter,
         componentManufacturer: kAudioUnitManufacturer_Apple, componentFlags: 0, componentFlagsMask: 0))
@@ -278,7 +283,7 @@ final class KeySounds {
         guard !busy else { return }              // l'audio è fermo: meglio un colpo in meno che un'app bloccata
         let v = voices[nextVoice]
         nextVoice = (nextVoice + 1) % voices.count
-        let vol = min(1, gain * (isMouse ? mouseVolume * KeySounds.mouseTrim : keyVolume))
+        let vol = min(1, gain * (isMouse ? mouseVolume * KeySounds.mouseTrim : keyVolume) * KeySounds.guadagnoMixer)
         audioQ.async { [weak self] in
             defer { self?.queuedLock.lock(); self?.queued -= 1; self?.queuedLock.unlock() }
             guard let self else { return }
@@ -363,7 +368,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let muta = MutaModule()          // 19/10: converte nel notch e mette a posto (Pulsar Complete)
 
     private let expandedLength: CGFloat = 2
-    private let collapsedLength: CGFloat = 10_000 // macOS nasconde da solo ciò che non entra
+    // 16/11: niente più 10.000 pt fissi. Su macOS 27 un'icona che non entra viene scartata lei: vedi lunghezzaChiusaOra().
     private var barraGuardia: BarraGuardia?
     private var barCollapsed = Impostazioni.bool(.barCollapsed) {
         didSet { Impostazioni.set(barCollapsed, .barCollapsed) }
@@ -391,6 +396,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                     attiva: { [weak self] in self?.barCollapsed ?? false },
                                     ricrea: { [weak self] in self?.rebuildStatusItems() })
         barraGuardia?.avvia()
+        osservaLarghezza()
+        osservaRegistrazione()
         sounds = KeySounds()
         SuonoBordi.goccia = { KeySounds.shared?.drop(gain: $0) }
         Theme.refreshAppearance()   // 11/10: menu e avvisi seguono l'aspetto di Pulsar (chiaro in White Matte e in Sfondo chiaro)
@@ -825,7 +832,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         // Rapidi: i tasti rapidi di prima, poi gli altri interruttori (senza doppioni), poi le azioni
         var rapidi: [VocePannello] = [
-            rapido(QuickTile(symbol: "wand.and.stars", title: T("Barra pulita", "Clean bar"), on: barCollapsed, act: { [weak self] in self?.toggleBar() }), interruttore: true),
+            // 16/11: in Rapidi la Barra pulita automatica, solo mentre registri; quella fissa resta in Impostazioni → Barra
+            rapido(QuickTile(symbol: "wand.and.stars", title: T("Barra pulita quando registri", "Clean bar while recording"), on: BarraRegistrazione.acceso, act: { [weak self] in self?.toggleBarraRegistrazione() }), interruttore: true),
             // 13/11: il tema si cambia col pannello aperto, che si ritinge (prima si chiudeva)
             VocePannello(titolo: T("Tema: ", "Theme: ") + PulsarTema.attuale.title, simbolo: PulsarTema.attuale.chiaro ? "sun.max" : "moon",
                          immagine: nil, acceso: nil, nascosta: false, figli: [],
@@ -976,12 +984,81 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         f.scegliTema = { [weak self] t in self?.scegliTema(t) }
     }
 
+    /// 16/11 (macOS 27): la larghezza da chiusa si calcola sullo schermo vero, vedi BarraOrdine.lunghezzaChiusa.
+    /// Bordo destro del separatore, letto quando è stretto o accettato (scartato, macOS lo mette in un punto senza senso).
+    private var bordoSeparatore: CGFloat?
+    private var tentativiLarghezza = 0
+
+    private func lunghezzaChiusaOra() -> CGFloat {
+        guard let fin = separatorItem?.button?.window?.frame,
+              let schermo = separatorItem?.button?.window?.screen ?? NSScreen.main else { return 500 }
+        // solo a destra della metà: con la freccia « aperta il separatore finisce a sinistra del notch e il bordo non vale
+        if fin.maxX <= schermo.frame.maxX + 1 && fin.width < schermo.frame.width && fin.maxX > schermo.frame.midX { bordoSeparatore = fin.maxX }
+        let destra = bordoSeparatore ?? (statusItem?.button?.window?.frame.minX ?? schermo.frame.maxX - 300)
+        var notch: CGFloat?
+        if let a = schermo.auxiliaryTopRightArea, a.width > 0 {
+            notch = a.minX < schermo.frame.minX ? a.minX + schermo.frame.minX : a.minX
+        }
+        return BarraOrdine.lunghezzaChiusa(destra: destra, schermo: schermo.frame, notchDestra: notch,
+                                           fineMenu: notch == nil ? BarraOrdine.fineMenuAppDavanti() : nil)
+    }
+
     private func applyBarState() {
-        separatorItem?.length = barCollapsed ? collapsedLength : expandedLength
+        tentativiLarghezza = 0
+        let chiusa = barCollapsed ? lunghezzaChiusaOra() : expandedLength
+        separatorItem?.length = chiusa
+        if barCollapsed { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.controllaLarghezza() } }
         // 14/10 sera: il separatore resta SEMPRE visibile. Nasconderlo a barra aperta (per togliere lo slot di 18 pt)
         // faceva perdere a macOS la sua posizione: riacceso rinasceva altrove e la Barra pulita non nascondeva più niente
         // (l'autore: "perché Pulsar non mi nasconde le icone?"). Meglio lo spazietto che la funzione rotta.
         separatorItem?.isVisible = true
+    }
+
+    /// Se macOS ha scartato il separatore (la sua cornice finisce oltre lo schermo), si stringe del 25% e si riprova, al massimo 3 volte.
+    private func controllaLarghezza() {
+        guard barCollapsed, let sep = separatorItem, let fin = sep.button?.window?.frame,
+              let schermo = sep.button?.window?.screen ?? NSScreen.main else { return }
+        guard fin.maxX > schermo.frame.maxX + 1, tentativiLarghezza < 3 else { return }
+        tentativiLarghezza += 1
+        sep.length = max(40, (sep.length * 0.75).rounded())
+        NSLog("Pulsar barra: separatore scartato da macOS, provo \(sep.length) pt")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.controllaLarghezza() }
+    }
+
+    /// 16/11 sera, misurato: la freccia « di macOS 27 rimette da sola tutte le icone al loro posto (anche quelle
+    /// nascoste dalla Barra pulita) finché il mouse sta sulla barra, poi le rinasconde. Pulsar non deve fare niente.
+
+    /// 16/11, l'autore: "Solo quando registri" (barra-registrazione.swift). Ogni secondo: con l'interruttore acceso,
+    /// se macOS sta registrando lo schermo la Barra pulita si chiude; finita la registrazione si riapre, ma solo se
+    /// l'aveva chiusa questo controllo (una Barra pulita accesa a mano resta com'è).
+    private var chiusaPerRegistrazione = false
+    private func osservaRegistrazione() {
+        let t = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            let registra = BarraRegistrazione.acceso && BarraRegistrazione.inCorso()
+            if registra && !self.barCollapsed {
+                self.chiusaPerRegistrazione = true
+                self.toggleBar()
+            } else if !registra && self.chiusaPerRegistrazione {
+                self.chiusaPerRegistrazione = false
+                if self.barCollapsed { self.toggleBar() }
+            }
+        }
+        t.tolerance = 0.3
+    }
+    @objc private func toggleBarraRegistrazione() {
+        BarraRegistrazione.acceso.toggle()
+        if !BarraRegistrazione.acceso && chiusaPerRegistrazione { chiusaPerRegistrazione = false; if barCollapsed { toggleBar() } }
+    }
+
+    /// Senza notch il limite dipende dai menu dell'app davanti: si ricalcola quando cambia l'app o lo schermo.
+    private func osservaLarghezza() {
+        let ricalcola: (Notification) -> Void = { [weak self] _ in
+            guard let self, self.barCollapsed else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self.applyBarState() }
+        }
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main, using: ricalcola)
+        NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main, using: ricalcola)
     }
 
     // MARK: Costruzione voci

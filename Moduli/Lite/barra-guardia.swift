@@ -11,6 +11,7 @@
 // risultano tutte del Centro di Controllo. Senza Accessibilità la guardia non fa niente.
 import AppKit
 
+
 enum BarraOrdine {
     static let chiave = "NSStatusItem Preferred Position "
 
@@ -28,6 +29,39 @@ enum BarraOrdine {
 
     static func scrivi(_ nome: String, _ v: Double) {
         UserDefaults.standard.set(v, forKey: chiave + nome)
+    }
+
+    /// 16/11, macOS 27.2.1 (misurato con un'app di prova, 2056 pt di schermo col notch tra 918 e 1138):
+    /// un'icona più larga dello spazio libero non spinge più via le altre, viene scartata lei (10.000 → finisce
+    /// fuori gioco larga 5002 e le icone restano tutte visibili). 490 e 800 nascondono, 1100 e oltre vengono scartate,
+    /// e il limite cambia con lo stato della barra. Quindi la larghezza giusta è la più piccola che basta:
+    /// col notch arrivare un po' dentro il notch (a sinistra le icone non possono stare); senza notch fermarsi
+    /// poco prima della fine dei menu dell'app davanti. `destra` = bordo destro del separatore.
+    static func lunghezzaChiusa(destra: CGFloat, schermo: NSRect, notchDestra: CGFloat?, fineMenu: CGFloat?) -> CGFloat {
+        if let n = notchDestra, n > schermo.minX, n < destra { return max(40, (destra - n + 24).rounded()) }
+        let limite = (fineMenu ?? (schermo.minX + schermo.width * 0.45)) + 16
+        return max(40, (destra - max(limite, schermo.minX)).rounded())
+    }
+
+    /// Bordo destro dei menu dell'app davanti (serve solo sugli schermi senza notch). Senza Accessibilità: nil.
+    static func fineMenuAppDavanti() -> CGFloat? {
+        guard AXIsProcessTrusted(), let app = NSWorkspace.shared.frontmostApplication else { return nil }
+        let el = AXUIElementCreateApplication(app.processIdentifier)
+        AXUIElementSetMessagingTimeout(el, 0.2)
+        var bar: CFTypeRef?, figli: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(el, kAXMenuBarAttribute as CFString, &bar) == .success, let bar else { return nil }
+        AXUIElementCopyAttributeValue(bar as! AXUIElement, kAXChildrenAttribute as CFString, &figli)
+        var fine: CGFloat?
+        for k in (figli as? [AXUIElement]) ?? [] {
+            var p: CFTypeRef?, s: CFTypeRef?
+            AXUIElementCopyAttributeValue(k, kAXPositionAttribute as CFString, &p)
+            AXUIElementCopyAttributeValue(k, kAXSizeAttribute as CFString, &s)
+            var pt = CGPoint.zero, sz = CGSize.zero
+            if let p { AXValueGetValue(p as! AXValue, .cgPoint, &pt) }
+            if let s { AXValueGetValue(s as! AXValue, .cgSize, &sz) }
+            if sz.width > 0 { fine = max(fine ?? 0, pt.x + sz.width) }
+        }
+        return fine
     }
 
     /// 07/11: macOS cancella la posizione quando un'icona viene tolta (misurato con removeStatusItem). Senza, la Barra pulita non nasconde niente.
